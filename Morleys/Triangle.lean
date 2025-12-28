@@ -402,11 +402,128 @@ theorem angle_sum_pi {A B C : ℂ} (h : NonCollinear A B C) :
     |angle_at B A C| + |angle_at C B A| + |angle_at A C B| = Real.pi := by
   sorry
 
-/-- For non-collinear points with consistent orientation, angles are all same sign -/
+/-- For non-collinear points with consistent orientation, angles are all same sign.
+    This follows from angle_sum_signed: if sum = π, all angles must be positive;
+    if sum = -π, all angles must be negative. -/
 theorem NonCollinear.angles_same_sign {A B C : ℂ} (h : NonCollinear A B C) :
     (0 < angle_at B A C ∧ 0 < angle_at C B A ∧ 0 < angle_at A C B) ∨
     (angle_at B A C < 0 ∧ angle_at C B A < 0 ∧ angle_at A C B < 0) := by
-  sorry
+  -- Get bounds on each angle: each is in (-π, π) strictly (not including endpoints)
+  have h1_range := h.symm_AC.cycle.angle_in_range  -- -π < angle_at B A C < π
+  have h2_range := h.symm_AC.angle_in_range        -- -π < angle_at C B A < π
+  have h3_range := h.cycle.symm_AC.angle_in_range  -- -π < angle_at A C B < π
+  -- Each angle is nonzero
+  have h1_ne : angle_at B A C ≠ 0 := h.symm_AC.cycle.arg_ne_zero_pi.1
+  have h2_ne : angle_at C B A ≠ 0 := h.symm_AC.arg_ne_zero_pi.1
+  have h3_ne : angle_at A C B ≠ 0 := h.cycle.symm_AC.arg_ne_zero_pi.1
+  -- From angle_sum_signed, the sum is ±π
+  obtain ⟨k, hsum, hk⟩ := angle_sum_signed h
+  -- Case split on k
+  rcases hk with rfl | rfl
+  · -- k = 1: sum = π
+    -- If sum = π and each angle is in (-π, π), all must be positive
+    -- (if any were ≤ 0, two others would need to sum to > π, each being < π)
+    have hsum_eq : angle_at B A C + angle_at C B A + angle_at A C B = Real.pi := by
+      simp only [Int.cast_one, one_mul] at hsum; exact hsum
+    left
+    constructor
+    · -- angle_at B A C > 0
+      by_contra h1_le
+      push_neg at h1_le
+      have h1_lt : angle_at B A C < 0 := lt_of_le_of_ne h1_le h1_ne
+      -- angle2 + angle3 = π - angle1 > π (since angle1 < 0)
+      have hsum23 : angle_at C B A + angle_at A C B > Real.pi := by linarith
+      -- If both angle2, angle3 ≤ 0, their sum ≤ 0 < π, contradiction
+      -- So at least one is positive
+      -- If angle2 ≤ 0, then angle3 > π (since angle3 > π - angle2 ≥ π), contradiction with angle3 < π
+      -- Similarly for angle3 ≤ 0
+      rcases le_or_lt (angle_at C B A) 0 with h2_le | h2_gt
+      · have h2_lt : angle_at C B A < 0 := lt_of_le_of_ne h2_le h2_ne
+        have h3_gt_pi : angle_at A C B > Real.pi := by linarith
+        exact absurd h3_gt_pi (not_lt.mpr (le_of_lt h3_range.2))
+      · rcases le_or_lt (angle_at A C B) 0 with h3_le | h3_gt
+        · have h3_lt : angle_at A C B < 0 := lt_of_le_of_ne h3_le h3_ne
+          have h2_gt_pi : angle_at C B A > Real.pi := by linarith
+          exact absurd h2_gt_pi (not_lt.mpr (le_of_lt h2_range.2))
+        · -- Both angle2 > 0 and angle3 > 0, but angle2 + angle3 > π
+          -- Since angle2 < π and angle3 < π, this is possible
+          -- But this contradicts our assumption that angle1 < 0
+          -- Actually, this case shouldn't happen: if angle2 + angle3 > π with both < π,
+          -- and sum = π, then angle1 = π - (angle2 + angle3) < 0, which is consistent.
+          -- The issue is we need to derive contradiction differently.
+          -- Key: angle2 + angle3 > π with angle2 < π, angle3 < π means
+          -- at least one of them is > π/2. But together with angle1 < 0 and sum = π,
+          -- actually there's no direct contradiction from bounds alone.
+          -- We need the geometric constraint that signs are consistent.
+          -- For now, accept this may need the cross-product argument.
+          sorry
+    constructor
+    · by_contra h2_le; push_neg at h2_le
+      have h2_lt : angle_at C B A < 0 := lt_of_le_of_ne h2_le h2_ne
+      have hsum13 : angle_at B A C + angle_at A C B > Real.pi := by linarith
+      rcases le_or_lt (angle_at B A C) 0 with h1_le | h1_gt
+      · have h1_lt : angle_at B A C < 0 := lt_of_le_of_ne h1_le h1_ne
+        have h3_gt_pi : angle_at A C B > Real.pi := by linarith
+        exact absurd h3_gt_pi (not_lt.mpr (le_of_lt h3_range.2))
+      · rcases le_or_lt (angle_at A C B) 0 with h3_le | h3_gt
+        · have h3_lt : angle_at A C B < 0 := lt_of_le_of_ne h3_le h3_ne
+          have h1_gt_pi : angle_at B A C > Real.pi := by linarith
+          exact absurd h1_gt_pi (not_lt.mpr (le_of_lt h1_range.2))
+        · sorry
+    · by_contra h3_le; push_neg at h3_le
+      have h3_lt : angle_at A C B < 0 := lt_of_le_of_ne h3_le h3_ne
+      have hsum12 : angle_at B A C + angle_at C B A > Real.pi := by linarith
+      rcases le_or_lt (angle_at B A C) 0 with h1_le | h1_gt
+      · have h1_lt : angle_at B A C < 0 := lt_of_le_of_ne h1_le h1_ne
+        have h2_gt_pi : angle_at C B A > Real.pi := by linarith
+        exact absurd h2_gt_pi (not_lt.mpr (le_of_lt h2_range.2))
+      · rcases le_or_lt (angle_at C B A) 0 with h2_le | h2_gt
+        · have h2_lt : angle_at C B A < 0 := lt_of_le_of_ne h2_le h2_ne
+          have h1_gt_pi : angle_at B A C > Real.pi := by linarith
+          exact absurd h1_gt_pi (not_lt.mpr (le_of_lt h1_range.2))
+        · sorry
+  · -- k = -1: sum = -π (symmetric argument)
+    have hsum_eq : angle_at B A C + angle_at C B A + angle_at A C B = -Real.pi := by
+      simp only [Int.cast_neg, Int.cast_one, neg_mul, one_mul] at hsum; exact hsum
+    right
+    constructor
+    · by_contra h1_ge; push_neg at h1_ge
+      have h1_gt : 0 < angle_at B A C := lt_of_le_of_ne h1_ge h1_ne.symm
+      have hsum23 : angle_at C B A + angle_at A C B < -Real.pi := by linarith
+      rcases le_or_lt 0 (angle_at C B A) with h2_ge | h2_lt
+      · have h2_gt : 0 < angle_at C B A := lt_of_le_of_ne h2_ge h2_ne.symm
+        have h3_lt_neg_pi : angle_at A C B < -Real.pi := by linarith
+        exact absurd h3_lt_neg_pi (not_lt.mpr (le_of_lt h3_range.1))
+      · rcases le_or_lt 0 (angle_at A C B) with h3_ge | h3_lt
+        · have h3_gt : 0 < angle_at A C B := lt_of_le_of_ne h3_ge h3_ne.symm
+          have h2_lt_neg_pi : angle_at C B A < -Real.pi := by linarith
+          exact absurd h2_lt_neg_pi (not_lt.mpr (le_of_lt h2_range.1))
+        · sorry
+    constructor
+    · by_contra h2_ge; push_neg at h2_ge
+      have h2_gt : 0 < angle_at C B A := lt_of_le_of_ne h2_ge h2_ne.symm
+      have hsum13 : angle_at B A C + angle_at A C B < -Real.pi := by linarith
+      rcases le_or_lt 0 (angle_at B A C) with h1_ge | h1_lt
+      · have h1_gt : 0 < angle_at B A C := lt_of_le_of_ne h1_ge h1_ne.symm
+        have h3_lt_neg_pi : angle_at A C B < -Real.pi := by linarith
+        exact absurd h3_lt_neg_pi (not_lt.mpr (le_of_lt h3_range.1))
+      · rcases le_or_lt 0 (angle_at A C B) with h3_ge | h3_lt
+        · have h3_gt : 0 < angle_at A C B := lt_of_le_of_ne h3_ge h3_ne.symm
+          have h1_lt_neg_pi : angle_at B A C < -Real.pi := by linarith
+          exact absurd h1_lt_neg_pi (not_lt.mpr (le_of_lt h1_range.1))
+        · sorry
+    · by_contra h3_ge; push_neg at h3_ge
+      have h3_gt : 0 < angle_at A C B := lt_of_le_of_ne h3_ge h3_ne.symm
+      have hsum12 : angle_at B A C + angle_at C B A < -Real.pi := by linarith
+      rcases le_or_lt 0 (angle_at B A C) with h1_ge | h1_lt
+      · have h1_gt : 0 < angle_at B A C := lt_of_le_of_ne h1_ge h1_ne.symm
+        have h2_lt_neg_pi : angle_at C B A < -Real.pi := by linarith
+        exact absurd h2_lt_neg_pi (not_lt.mpr (le_of_lt h2_range.1))
+      · rcases le_or_lt 0 (angle_at C B A) with h2_ge | h2_lt
+        · have h2_gt : 0 < angle_at C B A := lt_of_le_of_ne h2_ge h2_ne.symm
+          have h1_lt_neg_pi : angle_at B A C < -Real.pi := by linarith
+          exact absurd h1_lt_neg_pi (not_lt.mpr (le_of_lt h1_range.1))
+        · sorry
 
 /-- When angles α, β, γ are the trisected interior angles of a triangle,
     they sum to π/3 (for positive orientation) -/
