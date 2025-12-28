@@ -15,7 +15,8 @@ form an equilateral triangle.
 
 ## Main results
 
-* `morleyR`, `morleyP`, `morleyQ` : The three Morley vertices
+* `morleyVertex` : General Morley vertex (fixed point of two rotations)
+* `morleyR`, `morleyP`, `morleyQ` : The three specific Morley vertices
 * `pairwise_cis_ne_one` : Denominators in Morley point formulas are nonzero
 * `morley_sum_zero` : Direct proof that R + ωP + ω²Q = 0
 * `morley_theorem` : The main theorem
@@ -34,21 +35,21 @@ open Complex Real
 
 /-! ## Morley Point Definitions -/
 
-/-- The Morley vertex R: intersection of trisectors from A and B.
-    This is the fixed point of the composition of rotations by 2α at A and 2β at B. -/
-noncomputable def morleyR (A B : ℂ) (α β : ℝ) : ℂ :=
-  (cis (2 * α) * (B * (1 - cis (2 * β))) + A * (1 - cis (2 * α))) /
-    (1 - cis (2 * α) * cis (2 * β))
+/-- The Morley vertex: intersection of two angle trisectors.
+    Given centers P₁, P₂ and trisection angles θ₁, θ₂, this is the fixed point
+    of the composition of rotations by 2θ₁ at P₁ and 2θ₂ at P₂. -/
+noncomputable def morleyVertex (P₁ P₂ : ℂ) (θ₁ θ₂ : ℝ) : ℂ :=
+  (cis (2 * θ₁) * (P₂ * (1 - cis (2 * θ₂))) + P₁ * (1 - cis (2 * θ₁))) /
+    (1 - cis (2 * θ₁) * cis (2 * θ₂))
+
+/-- The Morley vertex R: intersection of trisectors from A and B. -/
+noncomputable abbrev morleyR (A B : ℂ) (α β : ℝ) : ℂ := morleyVertex A B α β
 
 /-- The Morley vertex P: intersection of trisectors from B and C. -/
-noncomputable def morleyP (B C : ℂ) (β γ : ℝ) : ℂ :=
-  (cis (2 * β) * (C * (1 - cis (2 * γ))) + B * (1 - cis (2 * β))) /
-    (1 - cis (2 * β) * cis (2 * γ))
+noncomputable abbrev morleyP (B C : ℂ) (β γ : ℝ) : ℂ := morleyVertex B C β γ
 
 /-- The Morley vertex Q: intersection of trisectors from C and A. -/
-noncomputable def morleyQ (C A : ℂ) (γ α : ℝ) : ℂ :=
-  (cis (2 * γ) * (A * (1 - cis (2 * α))) + C * (1 - cis (2 * γ))) /
-    (1 - cis (2 * γ) * cis (2 * α))
+noncomputable abbrev morleyQ (C A : ℂ) (γ α : ℝ) : ℂ := morleyVertex C A γ α
 
 /-! ## Pairwise Non-Degeneracy -/
 
