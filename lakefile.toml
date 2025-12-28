@@ -1,0 +1,10 @@
+name = "morleys"
+version = "0.1.0"
+defaultTargets = ["morleys"]
+
+[[lean_lib]]
+name = "Morleys"
+
+[[lean_exe]]
+name = "morleys"
+root = "Main"
