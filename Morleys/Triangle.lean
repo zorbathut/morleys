@@ -402,128 +402,196 @@ theorem angle_sum_pi {A B C : ℂ} (h : NonCollinear A B C) :
     |angle_at B A C| + |angle_at C B A| + |angle_at A C B| = Real.pi := by
   sorry
 
+/-- Signed area of triangle ABC: positive for counterclockwise, negative for clockwise.
+    This equals (1/2) * ((B - A).im * (C - A).re - (B - A).re * (C - A).im), but we
+    drop the factor of 1/2 since we only care about the sign. -/
+def signedArea (A B C : ℂ) : ℝ :=
+  (B - A).im * (C - A).re - (B - A).re * (C - A).im
+
+/-- Signed area is cyclically invariant -/
+theorem signedArea_cycle (A B C : ℂ) : signedArea A B C = signedArea B C A := by
+  simp only [signedArea, sub_re, sub_im]
+  ring
+
+theorem signedArea_cycle' (A B C : ℂ) : signedArea A B C = signedArea C A B := by
+  rw [signedArea_cycle, signedArea_cycle]
+
+/-- For non-collinear points, signed area is nonzero -/
+theorem NonCollinear.signedArea_ne_zero {A B C : ℂ} (h : NonCollinear A B C) :
+    signedArea A B C ≠ 0 := by
+  -- If signedArea = 0, then (B - A) / (C - A) is real, contradicting NonCollinear
+  intro heq
+  -- The ratio (B - A) / (C - A) has imaginary part = signedArea / normSq (C - A)
+  have hCA : C - A ≠ 0 := sub_ne_zero.mpr h.ne_CA
+  have him : ((B - A) / (C - A)).im = signedArea A B C / Complex.normSq (C - A) := by
+    rw [Complex.div_im]
+    simp only [signedArea]
+    ring
+  -- Since signedArea = 0, the imaginary part is 0
+  rw [heq, zero_div] at him
+  -- So the ratio is real
+  have hreal : ∃ r : ℝ, (B - A) / (C - A) = r := by
+    use ((B - A) / (C - A)).re
+    apply Complex.ext
+    · simp
+    · simp [him]
+  obtain ⟨r, hr⟩ := hreal
+  -- Use h.symm_AC.cycle to get NonCollinear B A C, which has ratio_not_real for (B-A)/(C-A)
+  exact h.symm_AC.cycle.ratio_not_real r hr
+
+/-- The imaginary part of the ratio equals signedArea / normSq -/
+theorem ratio_im_eq_signedArea_div {A B C : ℂ} :
+    ((B - A) / (C - A)).im = signedArea A B C / Complex.normSq (C - A) := by
+  rw [Complex.div_im]
+  simp only [signedArea]
+  ring
+
 /-- For non-collinear points with consistent orientation, angles are all same sign.
-    This follows from angle_sum_signed: if sum = π, all angles must be positive;
-    if sum = -π, all angles must be negative. -/
+    The sign is determined by the signed area (orientation) of the triangle. -/
 theorem NonCollinear.angles_same_sign {A B C : ℂ} (h : NonCollinear A B C) :
     (0 < angle_at B A C ∧ 0 < angle_at C B A ∧ 0 < angle_at A C B) ∨
     (angle_at B A C < 0 ∧ angle_at C B A < 0 ∧ angle_at A C B < 0) := by
-  -- Get bounds on each angle: each is in (-π, π) strictly (not including endpoints)
-  have h1_range := h.symm_AC.cycle.angle_in_range  -- -π < angle_at B A C < π
-  have h2_range := h.symm_AC.angle_in_range        -- -π < angle_at C B A < π
-  have h3_range := h.cycle.symm_AC.angle_in_range  -- -π < angle_at A C B < π
-  -- Each angle is nonzero
-  have h1_ne : angle_at B A C ≠ 0 := h.symm_AC.cycle.arg_ne_zero_pi.1
-  have h2_ne : angle_at C B A ≠ 0 := h.symm_AC.arg_ne_zero_pi.1
-  have h3_ne : angle_at A C B ≠ 0 := h.cycle.symm_AC.arg_ne_zero_pi.1
-  -- From angle_sum_signed, the sum is ±π
-  obtain ⟨k, hsum, hk⟩ := angle_sum_signed h
-  -- Case split on k
-  rcases hk with rfl | rfl
-  · -- k = 1: sum = π
-    -- If sum = π and each angle is in (-π, π), all must be positive
-    -- (if any were ≤ 0, two others would need to sum to > π, each being < π)
-    have hsum_eq : angle_at B A C + angle_at C B A + angle_at A C B = Real.pi := by
-      simp only [Int.cast_one, one_mul] at hsum; exact hsum
-    left
+  -- The key insight: all three ratios have imaginary parts with the same sign as signedArea
+  have hCA : C - A ≠ 0 := sub_ne_zero.mpr h.ne_CA
+  have hAB : A - B ≠ 0 := sub_ne_zero.mpr h.ne_AB
+  have hBC : B - C ≠ 0 := sub_ne_zero.mpr h.ne_BC
+
+  -- Compute imaginary parts of the three ratios
+  have him1 : ((B - A) / (C - A)).im = signedArea A B C / Complex.normSq (C - A) :=
+    ratio_im_eq_signedArea_div
+  have him2 : ((C - B) / (A - B)).im = signedArea B C A / Complex.normSq (A - B) :=
+    ratio_im_eq_signedArea_div
+  have him3 : ((A - C) / (B - C)).im = signedArea C A B / Complex.normSq (B - C) :=
+    ratio_im_eq_signedArea_div
+
+  -- By cyclic invariance, all numerators are equal
+  rw [← signedArea_cycle A B C] at him2
+  rw [← signedArea_cycle' A B C] at him3
+
+  -- signedArea ≠ 0 for non-collinear
+  have hsa : signedArea A B C ≠ 0 := h.signedArea_ne_zero
+
+  -- normSq is positive for nonzero
+  have hns1 : 0 < Complex.normSq (C - A) := Complex.normSq_pos.mpr hCA
+  have hns2 : 0 < Complex.normSq (A - B) := Complex.normSq_pos.mpr hAB
+  have hns3 : 0 < Complex.normSq (B - C) := Complex.normSq_pos.mpr hBC
+
+  -- All imaginary parts have the same sign as signedArea
+  have hsign1 : 0 < ((B - A) / (C - A)).im ↔ 0 < signedArea A B C := by
+    rw [him1]
+    exact div_pos_iff_of_pos_right hns1
+  have hsign2 : 0 < ((C - B) / (A - B)).im ↔ 0 < signedArea A B C := by
+    rw [him2]
+    exact div_pos_iff_of_pos_right hns2
+  have hsign3 : 0 < ((A - C) / (B - C)).im ↔ 0 < signedArea A B C := by
+    rw [him3]
+    exact div_pos_iff_of_pos_right hns3
+
+  have hneg1 : ((B - A) / (C - A)).im < 0 ↔ signedArea A B C < 0 := by
+    rw [him1]
     constructor
-    · -- angle_at B A C > 0
-      by_contra h1_le
-      push_neg at h1_le
-      have h1_lt : angle_at B A C < 0 := lt_of_le_of_ne h1_le h1_ne
-      -- angle2 + angle3 = π - angle1 > π (since angle1 < 0)
-      have hsum23 : angle_at C B A + angle_at A C B > Real.pi := by linarith
-      -- If both angle2, angle3 ≤ 0, their sum ≤ 0 < π, contradiction
-      -- So at least one is positive
-      -- If angle2 ≤ 0, then angle3 > π (since angle3 > π - angle2 ≥ π), contradiction with angle3 < π
-      -- Similarly for angle3 ≤ 0
-      rcases le_or_lt (angle_at C B A) 0 with h2_le | h2_gt
-      · have h2_lt : angle_at C B A < 0 := lt_of_le_of_ne h2_le h2_ne
-        have h3_gt_pi : angle_at A C B > Real.pi := by linarith
-        exact absurd h3_gt_pi (not_lt.mpr (le_of_lt h3_range.2))
-      · rcases le_or_lt (angle_at A C B) 0 with h3_le | h3_gt
-        · have h3_lt : angle_at A C B < 0 := lt_of_le_of_ne h3_le h3_ne
-          have h2_gt_pi : angle_at C B A > Real.pi := by linarith
-          exact absurd h2_gt_pi (not_lt.mpr (le_of_lt h2_range.2))
-        · -- Both angle2 > 0 and angle3 > 0, but angle2 + angle3 > π
-          -- Since angle2 < π and angle3 < π, this is possible
-          -- But this contradicts our assumption that angle1 < 0
-          -- Actually, this case shouldn't happen: if angle2 + angle3 > π with both < π,
-          -- and sum = π, then angle1 = π - (angle2 + angle3) < 0, which is consistent.
-          -- The issue is we need to derive contradiction differently.
-          -- Key: angle2 + angle3 > π with angle2 < π, angle3 < π means
-          -- at least one of them is > π/2. But together with angle1 < 0 and sum = π,
-          -- actually there's no direct contradiction from bounds alone.
-          -- We need the geometric constraint that signs are consistent.
-          -- For now, accept this may need the cross-product argument.
-          sorry
+    · intro hdiv
+      rcases div_neg_iff.mp hdiv with ⟨_, hb⟩ | ⟨ha, _⟩
+      · exact absurd hb (not_lt.mpr (le_of_lt hns1))
+      · exact ha
+    · intro h; exact div_neg_of_neg_of_pos h hns1
+  have hneg2 : ((C - B) / (A - B)).im < 0 ↔ signedArea A B C < 0 := by
+    rw [him2]
     constructor
-    · by_contra h2_le; push_neg at h2_le
-      have h2_lt : angle_at C B A < 0 := lt_of_le_of_ne h2_le h2_ne
-      have hsum13 : angle_at B A C + angle_at A C B > Real.pi := by linarith
-      rcases le_or_lt (angle_at B A C) 0 with h1_le | h1_gt
-      · have h1_lt : angle_at B A C < 0 := lt_of_le_of_ne h1_le h1_ne
-        have h3_gt_pi : angle_at A C B > Real.pi := by linarith
-        exact absurd h3_gt_pi (not_lt.mpr (le_of_lt h3_range.2))
-      · rcases le_or_lt (angle_at A C B) 0 with h3_le | h3_gt
-        · have h3_lt : angle_at A C B < 0 := lt_of_le_of_ne h3_le h3_ne
-          have h1_gt_pi : angle_at B A C > Real.pi := by linarith
-          exact absurd h1_gt_pi (not_lt.mpr (le_of_lt h1_range.2))
-        · sorry
-    · by_contra h3_le; push_neg at h3_le
-      have h3_lt : angle_at A C B < 0 := lt_of_le_of_ne h3_le h3_ne
-      have hsum12 : angle_at B A C + angle_at C B A > Real.pi := by linarith
-      rcases le_or_lt (angle_at B A C) 0 with h1_le | h1_gt
-      · have h1_lt : angle_at B A C < 0 := lt_of_le_of_ne h1_le h1_ne
-        have h2_gt_pi : angle_at C B A > Real.pi := by linarith
-        exact absurd h2_gt_pi (not_lt.mpr (le_of_lt h2_range.2))
-      · rcases le_or_lt (angle_at C B A) 0 with h2_le | h2_gt
-        · have h2_lt : angle_at C B A < 0 := lt_of_le_of_ne h2_le h2_ne
-          have h1_gt_pi : angle_at B A C > Real.pi := by linarith
-          exact absurd h1_gt_pi (not_lt.mpr (le_of_lt h1_range.2))
-        · sorry
-  · -- k = -1: sum = -π (symmetric argument)
-    have hsum_eq : angle_at B A C + angle_at C B A + angle_at A C B = -Real.pi := by
-      simp only [Int.cast_neg, Int.cast_one, neg_mul, one_mul] at hsum; exact hsum
+    · intro hdiv
+      rcases div_neg_iff.mp hdiv with ⟨_, hb⟩ | ⟨ha, _⟩
+      · exact absurd hb (not_lt.mpr (le_of_lt hns2))
+      · exact ha
+    · intro h; exact div_neg_of_neg_of_pos h hns2
+  have hneg3 : ((A - C) / (B - C)).im < 0 ↔ signedArea A B C < 0 := by
+    rw [him3]
+    constructor
+    · intro hdiv
+      rcases div_neg_iff.mp hdiv with ⟨_, hb⟩ | ⟨ha, _⟩
+      · exact absurd hb (not_lt.mpr (le_of_lt hns3))
+      · exact ha
+    · intro h; exact div_neg_of_neg_of_pos h hns3
+
+  -- Use arg_nonneg_iff and arg_neg_iff to relate im to arg
+  -- arg z > 0 iff z.im > 0 (when z is not real, which is our case)
+  -- arg z < 0 iff z.im < 0
+  have harg1_pos : 0 < angle_at B A C ↔ 0 < ((B - A) / (C - A)).im := by
+    unfold angle_at
+    constructor
+    · intro hpos
+      have hnn := Complex.arg_nonneg_iff.mp (le_of_lt hpos)
+      by_contra hle
+      push_neg at hle
+      have : ((B - A) / (C - A)).im = 0 := le_antisymm hle hnn
+      -- This means the ratio is real, contradicting NonCollinear
+      have hreal : ∃ r : ℝ, (B - A) / (C - A) = r := by
+        use ((B - A) / (C - A)).re
+        apply Complex.ext <;> simp [this]
+      exact h.symm_AC.cycle.ratio_not_real _ hreal.choose_spec
+    · intro him_pos
+      have hnn : 0 ≤ Complex.arg ((B - A) / (C - A)) := Complex.arg_nonneg_iff.mpr (le_of_lt him_pos)
+      exact lt_of_le_of_ne hnn (h.symm_AC.cycle.arg_ne_zero_pi.1).symm
+
+  have harg1_neg : angle_at B A C < 0 ↔ ((B - A) / (C - A)).im < 0 := by
+    unfold angle_at
+    exact Complex.arg_neg_iff
+
+  have harg2_pos : 0 < angle_at C B A ↔ 0 < ((C - B) / (A - B)).im := by
+    unfold angle_at
+    constructor
+    · intro hpos
+      have hnn := Complex.arg_nonneg_iff.mp (le_of_lt hpos)
+      by_contra hle
+      push_neg at hle
+      have : ((C - B) / (A - B)).im = 0 := le_antisymm hle hnn
+      have hreal : ∃ r : ℝ, (C - B) / (A - B) = r := by
+        use ((C - B) / (A - B)).re
+        apply Complex.ext <;> simp [this]
+      exact h.symm_AC.ratio_not_real _ hreal.choose_spec
+    · intro him_pos
+      have hnn : 0 ≤ Complex.arg ((C - B) / (A - B)) := Complex.arg_nonneg_iff.mpr (le_of_lt him_pos)
+      exact lt_of_le_of_ne hnn (h.symm_AC.arg_ne_zero_pi.1).symm
+
+  have harg2_neg : angle_at C B A < 0 ↔ ((C - B) / (A - B)).im < 0 := by
+    unfold angle_at
+    exact Complex.arg_neg_iff
+
+  have harg3_pos : 0 < angle_at A C B ↔ 0 < ((A - C) / (B - C)).im := by
+    unfold angle_at
+    constructor
+    · intro hpos
+      have hnn := Complex.arg_nonneg_iff.mp (le_of_lt hpos)
+      by_contra hle
+      push_neg at hle
+      have : ((A - C) / (B - C)).im = 0 := le_antisymm hle hnn
+      have hreal : ∃ r : ℝ, (A - C) / (B - C) = r := by
+        use ((A - C) / (B - C)).re
+        apply Complex.ext <;> simp [this]
+      exact h.cycle.symm_AC.ratio_not_real _ hreal.choose_spec
+    · intro him_pos
+      have hnn : 0 ≤ Complex.arg ((A - C) / (B - C)) := Complex.arg_nonneg_iff.mpr (le_of_lt him_pos)
+      exact lt_of_le_of_ne hnn (h.cycle.symm_AC.arg_ne_zero_pi.1).symm
+
+  have harg3_neg : angle_at A C B < 0 ↔ ((A - C) / (B - C)).im < 0 := by
+    unfold angle_at
+    exact Complex.arg_neg_iff
+
+  -- Case split on sign of signedArea
+  rcases hsa.lt_or_gt with hsa_neg | hsa_pos
+  · -- signedArea < 0: all angles are negative
     right
     constructor
-    · by_contra h1_ge; push_neg at h1_ge
-      have h1_gt : 0 < angle_at B A C := lt_of_le_of_ne h1_ge h1_ne.symm
-      have hsum23 : angle_at C B A + angle_at A C B < -Real.pi := by linarith
-      rcases le_or_lt 0 (angle_at C B A) with h2_ge | h2_lt
-      · have h2_gt : 0 < angle_at C B A := lt_of_le_of_ne h2_ge h2_ne.symm
-        have h3_lt_neg_pi : angle_at A C B < -Real.pi := by linarith
-        exact absurd h3_lt_neg_pi (not_lt.mpr (le_of_lt h3_range.1))
-      · rcases le_or_lt 0 (angle_at A C B) with h3_ge | h3_lt
-        · have h3_gt : 0 < angle_at A C B := lt_of_le_of_ne h3_ge h3_ne.symm
-          have h2_lt_neg_pi : angle_at C B A < -Real.pi := by linarith
-          exact absurd h2_lt_neg_pi (not_lt.mpr (le_of_lt h2_range.1))
-        · sorry
+    · rw [harg1_neg, hneg1]; exact hsa_neg
     constructor
-    · by_contra h2_ge; push_neg at h2_ge
-      have h2_gt : 0 < angle_at C B A := lt_of_le_of_ne h2_ge h2_ne.symm
-      have hsum13 : angle_at B A C + angle_at A C B < -Real.pi := by linarith
-      rcases le_or_lt 0 (angle_at B A C) with h1_ge | h1_lt
-      · have h1_gt : 0 < angle_at B A C := lt_of_le_of_ne h1_ge h1_ne.symm
-        have h3_lt_neg_pi : angle_at A C B < -Real.pi := by linarith
-        exact absurd h3_lt_neg_pi (not_lt.mpr (le_of_lt h3_range.1))
-      · rcases le_or_lt 0 (angle_at A C B) with h3_ge | h3_lt
-        · have h3_gt : 0 < angle_at A C B := lt_of_le_of_ne h3_ge h3_ne.symm
-          have h1_lt_neg_pi : angle_at B A C < -Real.pi := by linarith
-          exact absurd h1_lt_neg_pi (not_lt.mpr (le_of_lt h1_range.1))
-        · sorry
-    · by_contra h3_ge; push_neg at h3_ge
-      have h3_gt : 0 < angle_at A C B := lt_of_le_of_ne h3_ge h3_ne.symm
-      have hsum12 : angle_at B A C + angle_at C B A < -Real.pi := by linarith
-      rcases le_or_lt 0 (angle_at B A C) with h1_ge | h1_lt
-      · have h1_gt : 0 < angle_at B A C := lt_of_le_of_ne h1_ge h1_ne.symm
-        have h2_lt_neg_pi : angle_at C B A < -Real.pi := by linarith
-        exact absurd h2_lt_neg_pi (not_lt.mpr (le_of_lt h2_range.1))
-      · rcases le_or_lt 0 (angle_at C B A) with h2_ge | h2_lt
-        · have h2_gt : 0 < angle_at C B A := lt_of_le_of_ne h2_ge h2_ne.symm
-          have h1_lt_neg_pi : angle_at B A C < -Real.pi := by linarith
-          exact absurd h1_lt_neg_pi (not_lt.mpr (le_of_lt h1_range.1))
-        · sorry
+    · rw [harg2_neg, hneg2]; exact hsa_neg
+    · rw [harg3_neg, hneg3]; exact hsa_neg
+  · -- signedArea > 0: all angles are positive
+    left
+    constructor
+    · rw [harg1_pos, hsign1]; exact hsa_pos
+    constructor
+    · rw [harg2_pos, hsign2]; exact hsa_pos
+    · rw [harg3_pos, hsign3]; exact hsa_pos
 
 /-- When angles α, β, γ are the trisected interior angles of a triangle,
     they sum to π/3 (for positive orientation) -/
