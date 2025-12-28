@@ -397,11 +397,6 @@ theorem angle_sum_signed {A B C : ℂ} (h : NonCollinear A B C) :
     · simp only [hS_eq, Int.cast_zero, mul_zero, add_zero, Int.cast_one, one_mul]
     · left; rfl
 
-/-- The interior angles of a triangle sum to π (the standard form) -/
-theorem angle_sum_pi {A B C : ℂ} (h : NonCollinear A B C) :
-    |angle_at B A C| + |angle_at C B A| + |angle_at A C B| = Real.pi := by
-  sorry
-
 /-- Signed area of triangle ABC: positive for counterclockwise, negative for clockwise.
     This equals (1/2) * ((B - A).im * (C - A).re - (B - A).re * (C - A).im), but we
     drop the factor of 1/2 since we only care about the sign. -/
@@ -592,6 +587,31 @@ theorem NonCollinear.angles_same_sign {A B C : ℂ} (h : NonCollinear A B C) :
     constructor
     · rw [harg2_pos, hsign2]; exact hsa_pos
     · rw [harg3_pos, hsign3]; exact hsa_pos
+
+/-- The interior angles of a triangle sum to π (the standard form) -/
+theorem angle_sum_pi {A B C : ℂ} (h : NonCollinear A B C) :
+    |angle_at B A C| + |angle_at C B A| + |angle_at A C B| = Real.pi := by
+  -- Get signed sum = ±π
+  obtain ⟨k, hsum, hk⟩ := angle_sum_signed h
+  -- Get same sign for all angles
+  rcases h.angles_same_sign with ⟨h1, h2, h3⟩ | ⟨h1, h2, h3⟩
+  · -- All positive case
+    simp only [abs_of_pos h1, abs_of_pos h2, abs_of_pos h3]
+    rcases hk with rfl | rfl
+    · simp only [Int.cast_one, one_mul] at hsum; exact hsum
+    · -- k = -1, sum = -π, but angles are positive, contradiction
+      simp only [Int.cast_neg, Int.cast_one, neg_mul, one_mul] at hsum
+      have : angle_at B A C + angle_at C B A + angle_at A C B > 0 := by linarith
+      linarith [Real.pi_pos]
+  · -- All negative case
+    simp only [abs_of_neg h1, abs_of_neg h2, abs_of_neg h3]
+    rcases hk with rfl | rfl
+    · -- k = 1, sum = π, but angles are negative, contradiction
+      simp only [Int.cast_one, one_mul] at hsum
+      have : angle_at B A C + angle_at C B A + angle_at A C B < 0 := by linarith
+      linarith [Real.pi_pos]
+    · simp only [Int.cast_neg, Int.cast_one, neg_mul, one_mul] at hsum
+      linarith
 
 /-- When angles α, β, γ are the trisected interior angles of a triangle,
     they sum to π/3 (for positive orientation) -/
