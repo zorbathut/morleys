@@ -149,10 +149,9 @@ theorem root_unity_carac (a₁ a₂ a₃ b₁ b₂ b₃ : ℂ)
   -- Clear denominators and verify the polynomial identity
   -- This is a massive computation verified in Isabelle (see Third_Unity_Root.thy)
   field_simp [h₁₂, h₂₃, h₁₃, h13']
-  -- The polynomial identity after clearing denominators is verified in:
-  -- Isabelle AFP: Morley_Theorem/Third_Unity_Root.thy, theorem root_unity_carac (lines 54-115)
-  -- The identity holds using ω³ = 1 and 1 + ω + ω² = 0
-  sorry
+  -- The polynomial identity is proven using Lean 4.21's grind tactic with Gröbner basis
+  -- The identity holds using ω³ = 1 and 1 + ω + ω² = 0 (from hωsum, hω3 in context)
+  grind
 
 /-- When the LHS of root_unity_carac is zero, R + ω*P + ω²*Q = 0.
     This is the condition for the Morley triangle to be equilateral. -/

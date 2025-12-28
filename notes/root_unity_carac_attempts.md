@@ -141,7 +141,30 @@ The Isabelle proof is ~60 lines of heavy automation.
 
 ## Current Status
 
-The theorem remains `sorry`'d. The rest of Connes' proof (`morley_triangle_equilateral`) works correctly with the assumption that this identity holds.
+**SOLVED!** (December 2025)
+
+The theorem is now fully proven using Lean 4.21's `grind` tactic.
+
+### What Worked
+
+After `field_simp` to clear denominators, a simple `grind` solves the polynomial identity.
+
+```lean
+field_simp [h₁₂, h₂₃, h₁₃, h13']
+grind
+```
+
+The `grind` tactic (introduced in Lean 4.20) includes a Gröbner basis solver that can handle polynomial identities with hypotheses like `ω³ = 1` and `1 + ω + ω² = 0` automatically.
+
+### Key Factors in Success
+
+1. **Lean version 4.21** with the improved `grind` tactic
+2. **Proper setup**: The hypotheses `hωsum : 1 + ω + ω² = 0` and `hω3 : ω³ = 1` were already in context from earlier in the proof
+3. **field_simp** first to clear all denominators before `grind`
+
+### Note on polyrith
+
+The `polyrith` tactic was also attempted, but the SageCell web API it relied on has been shut down. There is no longer a way to use polyrith with local Sage - the functionality was removed from mathlib4.
 
 ## Files
 - Current implementation: `Morleys/Connes.lean` (line 155)
