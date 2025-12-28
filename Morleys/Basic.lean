@@ -5,7 +5,7 @@ Authors: Claude
 -/
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Analysis.Complex.Arg
-import Mathlib.Data.Complex.Exponential
+import Mathlib.Analysis.Complex.Exponential
 import Mathlib.RingTheory.RootsOfUnity.Complex
 
 /-!

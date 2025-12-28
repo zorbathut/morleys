@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Claude
 -/
 import Mathlib.Analysis.Complex.Arg
-import Mathlib.Data.Complex.Exponential
+import Mathlib.Analysis.Complex.Exponential
 import Morleys.CubeRoot
 import Morleys.Trig
 
@@ -87,7 +87,7 @@ theorem rotation_center (A : ℂ) (θ : ℝ) : rotation A θ A = A := by
 /-- Rotation preserves distance from center -/
 theorem rotation_dist_center (A : ℂ) (θ : ℝ) (z : ℂ) :
     ‖rotation A θ z - A‖ = ‖z - A‖ := by
-  simp [rotation, norm_mul, norm_cis]
+  simp [rotation, norm_cis]
 
 /-- Composing rotations with the same center adds angles -/
 theorem rotation_comp_same_center (A : ℂ) (θ₁ θ₂ : ℝ) (z : ℂ) :

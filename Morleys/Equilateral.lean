@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Claude
 -/
 import Mathlib.Analysis.Complex.Arg
-import Mathlib.Data.Complex.Exponential
+import Mathlib.Analysis.Complex.Exponential
 import Morleys.CubeRoot
 import Morleys.Rotation
 
