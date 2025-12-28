@@ -17,16 +17,15 @@ form an equilateral triangle.
 
 * `morleyR`, `morleyP`, `morleyQ` : The three Morley vertices
 * `pairwise_cis_ne_one` : Denominators in Morley point formulas are nonzero
-* `triple_rotation_identity` : The composition of three cubed rotations is identity
+* `morley_sum_zero` : Direct proof that R + ωP + ω²Q = 0
 * `morley_theorem` : The main theorem
 
 ## Strategy
 
 1. From Triangle.lean: `trisected_angles_sum` gives α + β + γ = π/3
 2. Prove pairwise cis products ≠ 1 (denominators nonzero)
-3. Prove triple rotation composition = identity (from angle constraint)
-4. Apply `lhs_zero_when_identity` to get LHS = 0
-5. Apply `morley_triangle_equilateral` to conclude
+3. Prove R + ωP + ω²Q = 0 directly via `grind` on the polynomial identity
+4. Apply `omega_sum_zero_isEquilateral` to conclude
 -/
 
 namespace Morley
@@ -185,77 +184,77 @@ theorem pairwise_cis_ne_one (α β γ : ℝ)
       linarith
     omega
 
-/-! ## Triple Rotation Identity -/
+/-! ## Equilateral Condition -/
 
-/-- When α + β + γ = π/3, the product (cis(2α) * cis(2β) * cis(2γ))³ = 1 -/
-theorem cis_product_cubed_eq_one (α β γ : ℝ) (hsum : α + β + γ = Real.pi / 3) :
-    (cis (2 * α) * cis (2 * β) * cis (2 * γ)) ^ 3 = 1 := by
-  have h : cis (2 * α) * cis (2 * β) * cis (2 * γ) = ω := cis_product_omega α β γ (by linarith)
-  rw [h]
-  exact omega_cubed
-
-/-- The composition of three cubed affine rotations.
-    From equality_for_comp: comp(z) = (a₁a₂a₃)³ * z + LHS -/
-theorem triple_comp_formula (a₁ a₂ a₃ b₁ b₂ b₃ z : ℂ) :
-    a₁ * (a₁ * (a₁ * (a₂ * (a₂ * (a₂ * (a₃ * (a₃ * (a₃ * z + b₃) + b₃) + b₃) + b₂) + b₂) + b₂) + b₁) + b₁) + b₁ =
-    (a₁ * a₂ * a₃) ^ 3 * z +
-      ((a₁ ^ 2 + a₁ + 1) * b₁ + a₁ ^ 3 * (a₂ ^ 2 + a₂ + 1) * b₂ +
-        a₁ ^ 3 * a₂ ^ 3 * (a₃ ^ 2 + a₃ + 1) * b₃) := by
-  ring
-
-/-- The triple cubed rotation is the identity when α + β + γ = π/3.
-    This is the key geometric lemma connecting angles to the algebraic identity. -/
-theorem triple_rotation_identity (A B C : ℂ) (α β γ : ℝ)
-    (hsum : α + β + γ = Real.pi / 3) :
-    ∀ z, (fun w =>
-      let a₁ := cis (2 * α)
-      let a₂ := cis (2 * β)
-      let a₃ := cis (2 * γ)
-      let b₁ := A * (1 - a₁)
-      let b₂ := B * (1 - a₂)
-      let b₃ := C * (1 - a₃)
-      a₁ * (a₁ * (a₁ * (a₂ * (a₂ * (a₂ * (a₃ * (a₃ * (a₃ * w + b₃) + b₃) + b₃) + b₂) + b₂) + b₂) + b₁) + b₁) + b₁) z = z := by
-  intro z
-  -- Use triple_comp_formula to rewrite as (a₁a₂a₃)³ * z + LHS
+/-- Direct proof that R + ωP + ω²Q = 0 for Morley points.
+    This is the equilateral condition proved directly via algebraic manipulation. -/
+theorem morley_sum_zero (A B C : ℂ) (α β γ : ℝ)
+    (hsum : α + β + γ = Real.pi / 3)
+    (h₁₂ : cis (2 * α) * cis (2 * β) ≠ 1)
+    (h₂₃ : cis (2 * β) * cis (2 * γ) ≠ 1)
+    (h₁₃ : cis (2 * α) * cis (2 * γ) ≠ 1) :
+    let R := morleyR A B α β
+    let P := morleyP B C β γ
+    let Q := morleyQ C A γ α
+    R + ω * P + ω ^ 2 * Q = 0 := by
+  simp only
+  -- Set up notation
   let a₁ := cis (2 * α)
   let a₂ := cis (2 * β)
   let a₃ := cis (2 * γ)
   let b₁ := A * (1 - a₁)
   let b₂ := B * (1 - a₂)
   let b₃ := C * (1 - a₃)
-  have hcomp := triple_comp_formula a₁ a₂ a₃ b₁ b₂ b₃ z
-  simp only at hcomp ⊢
-  rw [hcomp]
-  -- (a₁a₂a₃)³ = 1 from cis_product_cubed_eq_one
-  have hprod : (a₁ * a₂ * a₃) ^ 3 = 1 := cis_product_cubed_eq_one α β γ hsum
-  rw [hprod, one_mul]
-  -- Need to show LHS = 0, i.e., the constant term vanishes
-  -- This follows from the algebraic structure when (a₁a₂a₃)³ = 1 and product = ω
-  have hprod_omega : a₁ * a₂ * a₃ = ω := cis_product_omega α β γ (by linarith)
-  -- The LHS involves b₁, b₂, b₃ which depend on A, B, C
-  -- Key insight: The LHS is the constant term that must be 0 for composition = id
-  -- This can be shown by direct algebraic manipulation using 1 + ω + ω² = 0
-  -- and properties of ω
-  sorry
-
-/-! ## LHS = 0 From Geometry -/
-
-/-- The LHS polynomial vanishes when α + β + γ = π/3 -/
-theorem lhs_zero_geometric (A B C : ℂ) (α β γ : ℝ)
-    (hsum : α + β + γ = Real.pi / 3) :
-    let a₁ := cis (2 * α)
-    let a₂ := cis (2 * β)
-    let a₃ := cis (2 * γ)
-    let b₁ := A * (1 - a₁)
-    let b₂ := B * (1 - a₂)
-    let b₃ := C * (1 - a₃)
-    (a₁ ^ 2 + a₁ + 1) * b₁ + a₁ ^ 3 * (a₂ ^ 2 + a₂ + 1) * b₂ +
-      a₁ ^ 3 * a₂ ^ 3 * (a₃ ^ 2 + a₃ + 1) * b₃ = 0 := by
-  have hcubed := cis_product_cubed_eq_one α β γ hsum
-  have hid := triple_rotation_identity A B C α β γ hsum
-  exact lhs_zero_when_identity (cis (2 * α)) (cis (2 * β)) (cis (2 * γ))
-    (A * (1 - cis (2 * α))) (B * (1 - cis (2 * β))) (C * (1 - cis (2 * γ)))
-    hcubed hid
+  -- The product a₁a₂a₃ = ω from angle sum
+  have hprod : a₁ * a₂ * a₃ = ω := cis_product_omega α β γ (by linarith)
+  -- Convert denominators to nonzero form
+  have h₁₂' : 1 - a₁ * a₂ ≠ 0 := sub_ne_zero.mpr (Ne.symm h₁₂)
+  have h₂₃' : 1 - a₂ * a₃ ≠ 0 := sub_ne_zero.mpr (Ne.symm h₂₃)
+  have h₁₃' : 1 - a₁ * a₃ ≠ 0 := sub_ne_zero.mpr (Ne.symm h₁₃)
+  have h₃₁' : 1 - a₃ * a₁ ≠ 0 := by rw [mul_comm]; exact h₁₃'
+  -- cis values are nonzero
+  have ha₁ : a₁ ≠ 0 := cis_ne_zero (2 * α)
+  have ha₂ : a₂ ≠ 0 := cis_ne_zero (2 * β)
+  have ha₃ : a₃ ≠ 0 := cis_ne_zero (2 * γ)
+  -- aᵢ ≠ ω (else product constraint would force another pair to 1)
+  have ha₁ω : a₁ ≠ ω := by
+    intro heq
+    rw [heq] at hprod
+    have h3 : a₂ * a₃ = 1 := by
+      have h1 : ω * a₂ * a₃ = ω := hprod
+      have h2 : ω * (a₂ * a₃) = ω * 1 := by simp only [mul_one]; ring_nf at h1 ⊢; exact h1
+      exact mul_left_cancel₀ omega_ne_zero h2
+    exact h₂₃ h3
+  have ha₂ω : a₂ ≠ ω := by
+    intro heq
+    rw [heq] at hprod
+    have h3 : a₁ * a₃ = 1 := by
+      have h1 : a₁ * ω * a₃ = ω := hprod
+      have h2 : (a₁ * a₃) * ω = 1 * ω := by simp only [one_mul]; ring_nf at h1 ⊢; exact h1
+      exact mul_right_cancel₀ omega_ne_zero h2
+    exact h₁₃ h3
+  have ha₃ω : a₃ ≠ ω := by
+    intro heq
+    rw [heq] at hprod
+    have h3 : a₁ * a₂ = 1 := by
+      have h1 : a₁ * a₂ * ω = ω := hprod
+      have h2 : (a₁ * a₂) * ω = 1 * ω := by simp only [one_mul]; exact h1
+      exact mul_right_cancel₀ omega_ne_zero h2
+    exact h₁₂ h3
+  -- Unfold the Morley point definitions
+  unfold morleyR morleyP morleyQ
+  -- Use root_unity_carac: LHS = coeff * (R + ωP + ω²Q)
+  -- When LHS = 0 (which we can verify algebraically), R + ωP + ω²Q = 0
+  -- Actually, we prove R + ωP + ω²Q = 0 directly by field_simp and grind
+  have h13' : (1 : ℂ) - a₃ * a₁ = 1 - a₁ * a₃ := by ring
+  rw [h13']
+  field_simp [h₁₂', h₂₃', h₁₃']
+  -- The polynomial identity: when a₁a₂a₃ = ω, the numerator vanishes
+  -- This is verified using grind with the ω identities
+  have _hω3 : ω ^ 3 = 1 := omega_cubed
+  have _hω2 : ω ^ 2 = -1 - ω := omega_sq_eq
+  have _hωsum : 1 + ω + ω ^ 2 = 0 := one_add_omega_add_omega_sq
+  grind
 
 /-! ## Main Theorem -/
 
@@ -282,11 +281,9 @@ theorem morley_theorem (A B C : ℂ) (hnd : NonCollinear A B C)
   have hγ : 0 < γ := by simp only [γ]; linarith [hpos.2.2]
   -- Get pairwise cis ≠ 1 conditions
   have hpair := pairwise_cis_ne_one α β γ hα hβ hγ hsum
-  -- Get LHS = 0
-  have hLHS := lhs_zero_geometric A B C α β γ hsum
-  -- Apply morley_triangle_equilateral
-  exact morley_triangle_equilateral A B C α β γ hsum
-    (morleyR A B α β) (morleyP B C β γ) (morleyQ C A γ α)
-    rfl rfl rfl hpair.1 hpair.2.1 hpair.2.2 hLHS
+  -- Get R + ωP + ω²Q = 0 directly from morley_sum_zero
+  have hequil := morley_sum_zero A B C α β γ hsum hpair.1 hpair.2.1 hpair.2.2
+  -- Apply omega_sum_zero_isEquilateral to conclude
+  exact omega_sum_zero_isEquilateral (morleyR A B α β) (morleyP B C β γ) (morleyQ C A γ α) hequil
 
 end Morley
