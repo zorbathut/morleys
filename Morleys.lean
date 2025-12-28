@@ -5,3 +5,4 @@ import Morleys.CubeRoot
 import Morleys.Trig
 import Morleys.Rotation
 import Morleys.Equilateral
+import Morleys.Connes
