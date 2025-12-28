@@ -134,12 +134,11 @@ noncomputable def rotationPairFixedPoint (A B : ℂ) (θ₁ θ₂ : ℝ) : ℂ :
 theorem rotation_pair_fixedPoint_spec (A B : ℂ) (θ₁ θ₂ : ℝ) (h : cis (θ₁ + θ₂) ≠ 1) :
     let P := rotationPairFixedPoint A B θ₁ θ₂
     rotation A θ₁ (rotation B θ₂ P) = P := by
-  intro P
   simp only [rotation, rotationPairFixedPoint]
   have h1 : (1 : ℂ) - cis (θ₁ + θ₂) ≠ 0 := sub_ne_zero.mpr (Ne.symm h)
-  have hcis : cis θ₁ * cis θ₂ = cis (θ₁ + θ₂) := (cis_add θ₁ θ₂).symm
-  -- Algebraic verification: after expanding P and applying rotations,
-  -- the result simplifies back to P using cis θ₁ * cis θ₂ = cis (θ₁ + θ₂)
-  sorry
+  have h2 : cis θ₁ * cis θ₂ - 1 ≠ 0 := by rw [← cis_add]; exact sub_ne_zero.mpr h
+  field_simp [h1, h2]
+  simp only [cis_add]
+  ring
 
 end Morley
