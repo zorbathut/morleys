@@ -256,7 +256,146 @@ theorem NonCollinear.angle_in_range {A B C : ℂ} (h : NonCollinear A B C) :
 theorem angle_sum_signed {A B C : ℂ} (h : NonCollinear A B C) :
     ∃ k : ℤ, angle_at B A C + angle_at C B A + angle_at A C B = k * Real.pi ∧
              (k = 1 ∨ k = -1) := by
-  sorry
+  unfold angle_at
+  set r1 := (B - A) / (C - A) with hr1_def
+  set r2 := (C - B) / (A - B) with hr2_def
+  set r3 := (A - C) / (B - C) with hr3_def
+
+  have hCA : C - A ≠ 0 := sub_ne_zero.mpr h.ne_CA
+  have hAB : A - B ≠ 0 := sub_ne_zero.mpr h.ne_AB
+  have hBC : B - C ≠ 0 := sub_ne_zero.mpr h.ne_BC
+
+  have hr1_ne : r1 ≠ 0 := div_ne_zero (sub_ne_zero.mpr h.ne_AB.symm) hCA
+  have hr2_ne : r2 ≠ 0 := div_ne_zero (sub_ne_zero.mpr h.ne_BC.symm) hAB
+  have hr3_ne : r3 ≠ 0 := div_ne_zero (sub_ne_zero.mpr h.ne_CA.symm) hBC
+
+  -- Product is -1
+  have hprod : r1 * r2 * r3 = -1 := by
+    simp only [hr1_def, hr2_def, hr3_def]
+    field_simp [hCA, hAB, hBC]
+    ring
+
+  -- Let S be the sum of args
+  set S := Complex.arg r1 + Complex.arg r2 + Complex.arg r3 with hS_def
+
+  -- Bounds on individual args (each in (-π, π) strictly)
+  have h1_lt_pi : Complex.arg r1 < Real.pi :=
+    lt_of_le_of_ne (Complex.arg_le_pi r1) (h.symm_AC.cycle.arg_ne_zero_pi).2
+  have h2_lt_pi : Complex.arg r2 < Real.pi :=
+    lt_of_le_of_ne (Complex.arg_le_pi r2) (h.symm_AC.arg_ne_zero_pi).2
+  have h3_lt_pi : Complex.arg r3 < Real.pi :=
+    lt_of_le_of_ne (Complex.arg_le_pi r3) (h.cycle.symm_AC.arg_ne_zero_pi).2
+
+  have h1_gt : -Real.pi < Complex.arg r1 := Complex.neg_pi_lt_arg r1
+  have h2_gt : -Real.pi < Complex.arg r2 := Complex.neg_pi_lt_arg r2
+  have h3_gt : -Real.pi < Complex.arg r3 := Complex.neg_pi_lt_arg r3
+
+  have hS_lt : S < 3 * Real.pi := by linarith
+  have hS_gt : -3 * Real.pi < S := by linarith
+
+  -- Key lemma: ‖x‖ * exp (arg x * I) = x
+  have hnorm1 : (‖r1‖ : ℂ) ≠ 0 := by simp [hr1_ne]
+  have hnorm2 : (‖r2‖ : ℂ) ≠ 0 := by simp [hr2_ne]
+  have hnorm3 : (‖r3‖ : ℂ) ≠ 0 := by simp [hr3_ne]
+
+  -- exp(I * S) = -1
+  have hexp_S : Complex.exp (Complex.I * S) = -1 := by
+    have h1 : Complex.exp (Complex.arg r1 * Complex.I) = r1 / ‖r1‖ := by
+      have := Complex.norm_mul_exp_arg_mul_I r1
+      field_simp [hnorm1] at this ⊢
+      exact this
+    have h2 : Complex.exp (Complex.arg r2 * Complex.I) = r2 / ‖r2‖ := by
+      have := Complex.norm_mul_exp_arg_mul_I r2
+      field_simp [hnorm2] at this ⊢
+      exact this
+    have h3 : Complex.exp (Complex.arg r3 * Complex.I) = r3 / ‖r3‖ := by
+      have := Complex.norm_mul_exp_arg_mul_I r3
+      field_simp [hnorm3] at this ⊢
+      exact this
+    simp only [hS_def]
+    have hcast : (↑(Complex.arg r1 + Complex.arg r2 + Complex.arg r3) : ℂ) =
+                 ↑(Complex.arg r1) + ↑(Complex.arg r2) + ↑(Complex.arg r3) := by push_cast; ring
+    calc Complex.exp (Complex.I * ↑(Complex.arg r1 + Complex.arg r2 + Complex.arg r3))
+        = Complex.exp (Complex.I * (↑(Complex.arg r1) + ↑(Complex.arg r2) + ↑(Complex.arg r3))) := by
+            rw [hcast]
+        _ = Complex.exp ((↑(Complex.arg r1) + ↑(Complex.arg r2) + ↑(Complex.arg r3)) * Complex.I) := by
+            ring_nf
+        _ = Complex.exp (↑(Complex.arg r1) * Complex.I + ↑(Complex.arg r2) * Complex.I +
+            ↑(Complex.arg r3) * Complex.I) := by ring_nf
+        _ = Complex.exp (↑(Complex.arg r1) * Complex.I) *
+            Complex.exp (↑(Complex.arg r2) * Complex.I) *
+            Complex.exp (↑(Complex.arg r3) * Complex.I) := by
+            rw [Complex.exp_add, Complex.exp_add]
+        _ = (r1 / ‖r1‖) * (r2 / ‖r2‖) * (r3 / ‖r3‖) := by rw [h1, h2, h3]
+        _ = (r1 * r2 * r3) / ((‖r1‖ : ℂ) * ‖r2‖ * ‖r3‖) := by ring
+        _ = (r1 * r2 * r3) / ‖r1 * r2 * r3‖ := by
+            congr 1
+            simp only [norm_mul]
+            push_cast
+            ring
+        _ = -1 / ‖(-1 : ℂ)‖ := by rw [hprod]
+        _ = -1 / 1 := by simp
+        _ = -1 := by ring
+
+  -- exp(I * S) = exp(I * π), so S = π + 2πn for some integer n
+  have hexp_pi : Complex.exp (Complex.I * Real.pi) = -1 := by
+    rw [mul_comm, Complex.exp_mul_I]
+    simp [Complex.cos_pi, Complex.sin_pi]
+
+  rw [← hexp_pi] at hexp_S
+  rw [Complex.exp_eq_exp_iff_exists_int] at hexp_S
+  obtain ⟨n, hn⟩ := hexp_S
+  -- hn : I * S = I * π + n * (2 * π * I)
+
+  -- Extract S = π + 2πn from the complex equation
+  have hS_eq : S = Real.pi + 2 * Real.pi * n := by
+    -- hn : I * S = I * π + n * (2 * π * I)
+    -- Extract imaginary part: S = π + 2πn
+    have hL : (Complex.I * S).im = S := by simp
+    have hR : (Complex.I * Real.pi + n * (2 * Real.pi * Complex.I)).im =
+               Real.pi + n * (2 * Real.pi) := by simp [mul_comm]
+    have h : S = Real.pi + n * (2 * Real.pi) := by
+      calc S = (Complex.I * S).im := hL.symm
+        _ = (Complex.I * Real.pi + n * (2 * Real.pi * Complex.I)).im := by rw [hn]
+        _ = Real.pi + n * (2 * Real.pi) := hR
+    linarith
+
+  -- From bounds and hS_eq, n ∈ {-1, 0}
+  have hn_bound : n = -1 ∨ n = 0 := by
+    rw [hS_eq] at hS_lt hS_gt
+    have hpi_pos : (0 : ℝ) < Real.pi := Real.pi_pos
+    -- From hS_lt: π + 2πn < 3π, so 2πn < 2π, so n < 1 (since π > 0)
+    -- From hS_gt: -3π < π + 2πn, so -4π < 2πn, so -2 < n
+    have h1 : 2 * Real.pi * n < 2 * Real.pi := by linarith
+    have h2 : -4 * Real.pi < 2 * Real.pi * n := by linarith
+    have hpi2_pos : 0 < 2 * Real.pi := by linarith
+    have hn_lt_real : (n : ℝ) < 1 := by nlinarith [sq_nonneg Real.pi]
+    have hn_gt_real : (-2 : ℝ) < n := by nlinarith [sq_nonneg Real.pi]
+    have hn_lt : n < 1 := by
+      by_contra h_neg
+      push_neg at h_neg
+      have : (1 : ℝ) ≤ n := by exact_mod_cast h_neg
+      linarith
+    have hn_gt : -2 < n := by
+      by_contra h_neg
+      push_neg at h_neg
+      have : (n : ℝ) ≤ -2 := by exact_mod_cast h_neg
+      linarith
+    omega
+
+  -- Convert to the form k * π
+  rcases hn_bound with rfl | rfl
+  · -- n = -1, so S = π - 2π = -π
+    use -1
+    constructor
+    · simp only [hS_eq, Int.cast_neg, Int.cast_one, neg_mul, one_mul]
+      ring
+    · right; rfl
+  · -- n = 0, so S = π
+    use 1
+    constructor
+    · simp only [hS_eq, Int.cast_zero, mul_zero, add_zero, Int.cast_one, one_mul]
+    · left; rfl
 
 /-- The interior angles of a triangle sum to π (the standard form) -/
 theorem angle_sum_pi {A B C : ℂ} (h : NonCollinear A B C) :
