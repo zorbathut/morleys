@@ -15,8 +15,7 @@ form an equilateral triangle.
 
 ## Main results
 
-* `morleyVertex` : General Morley vertex (fixed point of two rotations)
-* `morleyR`, `morleyP`, `morleyQ` : The three specific Morley vertices
+* `morleyVertex` : Morley vertex (fixed point of two rotations)
 * `pairwise_cis_ne_one` : Denominators in Morley point formulas are nonzero
 * `morley_sum_zero` : Direct proof that R + ωP + ω²Q = 0
 * `morley_theorem` : The main theorem
@@ -41,15 +40,6 @@ open Complex Real
 noncomputable def morleyVertex (P₁ P₂ : ℂ) (θ₁ θ₂ : ℝ) : ℂ :=
   (cis (2 * θ₁) * (P₂ * (1 - cis (2 * θ₂))) + P₁ * (1 - cis (2 * θ₁))) /
     (1 - cis (2 * θ₁) * cis (2 * θ₂))
-
-/-- The Morley vertex R: intersection of trisectors from A and B. -/
-noncomputable abbrev morleyR (A B : ℂ) (α β : ℝ) : ℂ := morleyVertex A B α β
-
-/-- The Morley vertex P: intersection of trisectors from B and C. -/
-noncomputable abbrev morleyP (B C : ℂ) (β γ : ℝ) : ℂ := morleyVertex B C β γ
-
-/-- The Morley vertex Q: intersection of trisectors from C and A. -/
-noncomputable abbrev morleyQ (C A : ℂ) (γ α : ℝ) : ℂ := morleyVertex C A γ α
 
 /-! ## Pairwise Non-Degeneracy -/
 
@@ -194,9 +184,9 @@ theorem morley_sum_zero (A B C : ℂ) (α β γ : ℝ)
     (h₁₂ : cis (2 * α) * cis (2 * β) ≠ 1)
     (h₂₃ : cis (2 * β) * cis (2 * γ) ≠ 1)
     (h₁₃ : cis (2 * α) * cis (2 * γ) ≠ 1) :
-    let R := morleyR A B α β
-    let P := morleyP B C β γ
-    let Q := morleyQ C A γ α
+    let R := morleyVertex A B α β
+    let P := morleyVertex B C β γ
+    let Q := morleyVertex C A γ α
     R + ω * P + ω ^ 2 * Q = 0 := by
   simp only
   -- Set up notation
@@ -243,7 +233,7 @@ theorem morley_sum_zero (A B C : ℂ) (α β γ : ℝ)
       exact mul_right_cancel₀ omega_ne_zero h2
     exact h₁₂ h3
   -- Unfold the Morley point definitions
-  unfold morleyR morleyP morleyQ
+  unfold morleyVertex
   -- Use root_unity_carac: LHS = coeff * (R + ωP + ω²Q)
   -- When LHS = 0 (which we can verify algebraically), R + ωP + ω²Q = 0
   -- Actually, we prove R + ωP + ω²Q = 0 directly by field_simp and grind
@@ -266,9 +256,9 @@ theorem morley_theorem (A B C : ℂ) (hnd : NonCollinear A B C)
     let α := angle_at B A C / 3
     let β := angle_at C B A / 3
     let γ := angle_at A C B / 3
-    let R := morleyR A B α β
-    let P := morleyP B C β γ
-    let Q := morleyQ C A γ α
+    let R := morleyVertex A B α β
+    let P := morleyVertex B C β γ
+    let Q := morleyVertex C A γ α
     IsEquilateral R P Q := by
   -- Extract the trisected angles
   let α := angle_at B A C / 3
@@ -285,6 +275,7 @@ theorem morley_theorem (A B C : ℂ) (hnd : NonCollinear A B C)
   -- Get R + ωP + ω²Q = 0 directly from morley_sum_zero
   have hequil := morley_sum_zero A B C α β γ hsum hpair.1 hpair.2.1 hpair.2.2
   -- Apply omega_sum_zero_isEquilateral to conclude
-  exact omega_sum_zero_isEquilateral (morleyR A B α β) (morleyP B C β γ) (morleyQ C A γ α) hequil
+  exact omega_sum_zero_isEquilateral
+    (morleyVertex A B α β) (morleyVertex B C β γ) (morleyVertex C A γ α) hequil
 
 end Morley
