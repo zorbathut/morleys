@@ -4,3 +4,4 @@ import Morleys.Basic
 import Morleys.CubeRoot
 import Morleys.Trig
 import Morleys.Rotation
+import Morleys.Equilateral
