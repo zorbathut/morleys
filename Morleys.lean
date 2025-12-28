@@ -7,3 +7,4 @@ import Morleys.Rotation
 import Morleys.Equilateral
 import Morleys.Connes
 import Morleys.Triangle
+import Morleys.Morley
