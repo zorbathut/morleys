@@ -858,16 +858,19 @@ theorem translation_identity_for_ratios (B C : ℂ)
     let b := w / starRingEnd ℂ w
     let c := v / starRingEnd ℂ v
     c * (1 - b) * B + (1 - c) * C = 0 := by
-  -- The proof reduces algebraically to:
-  -- |B|² * |C-B|² + conj(B-C) * (C-B) * |B|² = |B|² * (|C-B|² - |C-B|²) = 0
-  -- using the identity conj(B-C) * (C-B) = -|C-B|²
-  -- This is verified by expanding the expression and using field_simp followed by ring.
-  -- The key algebraic identity conj_sub_mul_neg_eq_neg_normSq provides the cancellation.
   simp only
   have hBC : B - C ≠ 0 := sub_ne_zero.mpr (sub_ne_zero.mp hCB).symm
-  have _hkey := conj_sub_mul_neg_eq_neg_normSq B C
-  -- After clearing denominators, the expression vanishes due to the key identity
-  sorry
+  have hconj_B_ne : starRingEnd ℂ B ≠ 0 := star_ne_zero.mpr hB
+  have hconj_C_ne : starRingEnd ℂ C ≠ 0 := star_ne_zero.mpr hC
+  have hconj_BC_ne : starRingEnd ℂ (B - C) ≠ 0 := star_ne_zero.mpr hBC
+  have hconj_CB_ne : starRingEnd ℂ (C - B) ≠ 0 := star_ne_zero.mpr hCB
+  simp only [map_div₀]
+  field_simp [hB, hC, hBC, hCB, hconj_B_ne, hconj_C_ne, hconj_BC_ne, hconj_CB_ne]
+  -- Expand conjugates: conj(C-B) = conj(C) - conj(B) and conj(B-C) = conj(B) - conj(C)
+  have hconj_CB : starRingEnd ℂ (C - B) = starRingEnd ℂ C - starRingEnd ℂ B := map_sub _ _ _
+  have hconj_BC : starRingEnd ℂ (B - C) = starRingEnd ℂ B - starRingEnd ℂ C := map_sub _ _ _
+  rw [hconj_CB, hconj_BC]
+  ring
 
 /-- The translation vector for triple rotation (ABC order) with doubled angles.
 
@@ -942,35 +945,47 @@ theorem translation_ABC_zero_for_doubled_angles (A B C : ℂ) (hnd : NonCollinea
   have hCB' : (C - A) - (B - A) ≠ 0 := by
     calc (C - A) - (B - A) = C - B := by ring
       _ ≠ 0 := sub_ne_zero.mpr hnd.ne_BC.symm
-  -- The angles ∠B and ∠C are related to the ratios:
-  -- ∠B = angle_at C B A = arg((C-B)/(A-B))
-  -- ∠C = angle_at A C B = arg((A-C)/(B-C))
-  -- Using cis_twice_arg:
-  -- b = cis(2∠B) = ((C-B)/(A-B)) / conj((C-B)/(A-B))
-  -- c = cis(2∠C) = ((A-C)/(B-C)) / conj((A-C)/(B-C))
-  --
-  -- For the translated coordinates (A' = 0, B' = B-A, C' = C-A):
-  -- ∠B = angle_at (C-A) (B-A) 0 = arg((C-A - (B-A))/(0 - (B-A))) = arg((C-B)/(-( B-A))) = arg((C-B)/(A-B))
-  -- (unchanged as expected)
-  --
-  -- The translation_identity_for_ratios uses:
-  -- w = (B' - C') / B' = (B-A - (C-A)) / (B-A) = (B - C) / (B - A)
-  -- v = C' / (C' - B') = (C-A) / ((C-A) - (B-A)) = (C-A) / (C - B)
-  --
-  -- And b = w / conj(w) = cis(2 * arg(w))
-  --     c = v / conj(v) = cis(2 * arg(v))
-  --
-  -- We need to verify that:
-  -- cis(2 * angle_at C B A) = cis(2 * arg((B - C) / (B - A)))
-  -- cis(2 * angle_at A C B) = cis(2 * arg((C - A) / (C - B)))
-  --
-  -- Using the definition of angle_at and properties of arg:
-  -- angle_at C B A = arg((C - B) / (A - B))
-  -- arg((B - C) / (B - A)) = arg(-(C - B) / -(A - B)) = arg((C - B) / (A - B))
-  -- So cis(2 * angle_at C B A) = cis(2 * arg((B - C) / (B - A)))
-  --
-  -- Similarly for ∠C. This connects the angles to the ratios needed for translation_identity_for_ratios.
-  sorry
+  -- Connect b = cis(2∠B) to w/conj(w) where w = (B-C)/(B-A) = ((B-A)-(C-A))/(B-A)
+  -- Note: (B-C)/(B-A) = -(C-B)/-(A-B) = (C-B)/(A-B)
+  have hb_eq : b = ((B - A) - (C - A)) / (B - A) / starRingEnd ℂ (((B - A) - (C - A)) / (B - A)) := by
+    simp only [hb_def]
+    unfold angle_at
+    -- (B-A) - (C-A) = B - C, so the ratio is (B-C)/(B-A)
+    have hratio : (B - A) - (C - A) = B - C := by ring
+    rw [hratio]
+    -- (B-C)/(B-A) = (C-B)/(A-B) via neg/neg
+    have h1 : (B - C) / (B - A) = (C - B) / (A - B) := by
+      have ha : B - C = -(C - B) := by ring
+      have hb : B - A = -(A - B) := by ring
+      rw [ha, hb, neg_div_neg_eq]
+    rw [h1]
+    have hne : (C - B) / (A - B) ≠ 0 := by
+      apply div_ne_zero
+      · exact sub_ne_zero.mpr hnd.ne_BC.symm
+      · exact sub_ne_zero.mpr hnd.ne_AB
+    exact cis_twice_arg _ hne
+  -- Connect c = cis(2∠C) to v/conj(v) where v = (C-A)/(C-B)
+  -- Note: (C-A)/(C-B) = -(A-C)/-(B-C) = (A-C)/(B-C)
+  have hc_eq : c = (C - A) / ((C - A) - (B - A)) / starRingEnd ℂ ((C - A) / ((C - A) - (B - A))) := by
+    simp only [hc_def]
+    unfold angle_at
+    -- (C-A) - (B-A) = C - B
+    have hratio : (C - A) - (B - A) = C - B := by ring
+    rw [hratio]
+    -- (C-A)/(C-B) = (A-C)/(B-C) via neg/neg
+    have h1 : (C - A) / (C - B) = (A - C) / (B - C) := by
+      have ha : C - A = -(A - C) := by ring
+      have hb : C - B = -(B - C) := by ring
+      rw [ha, hb, neg_div_neg_eq]
+    rw [h1]
+    have hne : (A - C) / (B - C) ≠ 0 := by
+      apply div_ne_zero
+      · exact sub_ne_zero.mpr hnd.ne_CA.symm
+      · exact sub_ne_zero.mpr hnd.ne_BC
+    exact cis_twice_arg _ hne
+  -- Now apply translation_identity_for_ratios with B' = B-A, C' = C-A
+  rw [hb_eq, hc_eq]
+  exact translation_identity_for_ratios (B - A) (C - A) hB' hCB' hC'
 
 /-!
 ## Summary: Translation = 0 for the ABC Order
