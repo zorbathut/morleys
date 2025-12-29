@@ -455,6 +455,32 @@ foundation for this proof. The complete proof requires tracking how angle
 trisector lines interact with axial symmetry.
 -/
 
+/-- Applying rotation by 2*angle reverses the effect of axial symmetry.
+
+    This follows from img_r_sym and composition of rotations:
+    - img_r_sym: axialSymmetry z1 z2 z = rotation z1 (-2 * angle_at z z1 z2) z
+    - So: rotation z1 (2 * angle) (axialSymmetry z1 z2 z) = rotation z1 0 z = z -/
+theorem rotation_of_axialSymmetry {z1 z2 z : ℂ} (h12 : z1 ≠ z2) (hz : z ∉ line z1 z2) :
+    rotation z1 (2 * angle_at z z1 z2) (axialSymmetry z1 z2 z) = z := by
+  have him := img_r_sym h12 hz
+  calc rotation z1 (2 * angle_at z z1 z2) (axialSymmetry z1 z2 z)
+      = rotation z1 (2 * angle_at z z1 z2) (rotation z1 (-2 * angle_at z z1 z2) z) := by rw [him]
+    _ = rotation z1 (2 * angle_at z z1 z2 + (-2 * angle_at z z1 z2)) z := by
+        rw [rotation_comp_same_center]
+    _ = rotation z1 0 z := by ring_nf
+    _ = z := rotation_zero z1 z
+
+/-- For Morley angles, rotation by 6γ at C recovers vertex A from its reflection.
+
+    Specifically, if γ = angle_at A C B / 3, then 6γ = 2 * angle_at A C B,
+    so rotation C (6γ) (axialSymmetry C B A) = A by rotation_of_axialSymmetry. -/
+theorem rotation_6gamma_recovers_vertex (A B C : ℂ) (hCB : C ≠ B)
+    (hA_off_CB : A ∉ line C B) (γ : ℝ) (hγ : γ = angle_at A C B / 3) :
+    rotation C (6 * γ) (axialSymmetry C B A) = A := by
+  have h6 : 6 * γ = 2 * angle_at A C B := by rw [hγ]; ring
+  rw [h6]
+  exact rotation_of_axialSymmetry hCB hA_off_CB
+
 /-- The simplified form of LHS using the factorization (x² + x + 1)(1-x) = 1 - x³ -/
 theorem lhs_simplified_form (A B C : ℂ) (a b c : ℂ) (habc : a * b * c = 1) :
     (1 - a) * A + a * (1 - b) * B + a * b * (1 - c) * C =
