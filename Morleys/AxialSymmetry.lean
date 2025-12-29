@@ -647,4 +647,111 @@ theorem lhs_rewrite (A B C : ℂ) (a₁ a₂ a₃ : ℂ) :
         rw [hf₁, hf₂, hf₃]
     _ = (1 - a₁ ^ 3) * A + a₁ ^ 3 * (1 - a₂ ^ 3) * B + a₁ ^ 3 * a₂ ^ 3 * (1 - a₃ ^ 3) * C := by ring
 
+/-! ## Connection to Morley LHS
+
+The axiom in Morley.lean claims that for the Morley configuration, the LHS vanishes.
+Here we establish the key connection: the axiom's LHS equals the translation from
+triple_rotation_is_translation_by_lhs with angles 6α, 6β, 6γ (the cubed rotation angles).
+
+This means: LHS = 0 ⟺ triple rotation fixes A.
+-/
+
+/-- The Morley LHS (from the axiom) equals the translation from the (C,B,A) order
+    triple rotation with cubed angles.
+
+    The axiom's LHS is:
+    (a₁² + a₁ + 1)(A(1-a₁)) + a₁³(a₂² + a₂ + 1)(B(1-a₂)) + a₁³a₂³(a₃² + a₃ + 1)(C(1-a₃))
+
+    which by lhs_rewrite equals:
+    (1 - a₁³)A + a₁³(1 - a₂³)B + a₁³a₂³(1 - a₃³)C
+
+    which is exactly the translation from triple_rotation_is_translation_by_lhs
+    with θ₁ = 6α, θ₂ = 6β, θ₃ = 6γ (since cis(6α) = a₁³). -/
+theorem morley_lhs_eq_translation (A B C : ℂ) (α β γ : ℝ)
+    (_hsum : α + β + γ = Real.pi / 3) :
+    let a₁ := cis (2 * α)
+    let a₂ := cis (2 * β)
+    let a₃ := cis (2 * γ)
+    (a₁ ^ 2 + a₁ + 1) * (A * (1 - a₁)) +
+    a₁ ^ 3 * (a₂ ^ 2 + a₂ + 1) * (B * (1 - a₂)) +
+    a₁ ^ 3 * a₂ ^ 3 * (a₃ ^ 2 + a₃ + 1) * (C * (1 - a₃)) =
+    (1 - cis (6 * α)) * A + cis (6 * α) * (1 - cis (6 * β)) * B +
+    cis (6 * α) * cis (6 * β) * (1 - cis (6 * γ)) * C := by
+  simp only
+  -- First apply lhs_rewrite
+  have hlhs := lhs_rewrite A B C (cis (2 * α)) (cis (2 * β)) (cis (2 * γ))
+  rw [hlhs]
+  -- Now show cis(2α)³ = cis(6α) etc.
+  have h1 : cis (2 * α) ^ 3 = cis (6 * α) := by
+    simp only [pow_succ, pow_zero, one_mul]
+    rw [← cis_add, ← cis_add]; congr 1; ring
+  have h2 : cis (2 * β) ^ 3 = cis (6 * β) := by
+    simp only [pow_succ, pow_zero, one_mul]
+    rw [← cis_add, ← cis_add]; congr 1; ring
+  have h3 : cis (2 * γ) ^ 3 = cis (6 * γ) := by
+    simp only [pow_succ, pow_zero, one_mul]
+    rw [← cis_add, ← cis_add]; congr 1; ring
+  rw [h1, h2, h3]
+
+/-- The translation from triple rotation equals the Morley LHS.
+
+    This allows us to use triple_rotation_fixes_A_implies_lhs_zero to conclude
+    that if the triple rotation fixes A, then the Morley LHS = 0. -/
+theorem morley_lhs_is_translation (A B C : ℂ) (α β γ : ℝ)
+    (hsum : α + β + γ = Real.pi / 3) :
+    let θ₁ := 6 * α
+    let θ₂ := 6 * β
+    let θ₃ := 6 * γ
+    let a₁ := cis (2 * α)
+    let a₂ := cis (2 * β)
+    let a₃ := cis (2 * γ)
+    θ₁ + θ₂ + θ₃ = 2 * Real.pi ∧
+    (a₁ ^ 2 + a₁ + 1) * (A * (1 - a₁)) +
+     a₁ ^ 3 * (a₂ ^ 2 + a₂ + 1) * (B * (1 - a₂)) +
+     a₁ ^ 3 * a₂ ^ 3 * (a₃ ^ 2 + a₃ + 1) * (C * (1 - a₃)) =
+    (1 - cis θ₁) * A + cis θ₁ * (1 - cis θ₂) * B + cis θ₁ * cis θ₂ * (1 - cis θ₃) * C := by
+  simp only
+  constructor
+  · -- θ₁ + θ₂ + θ₃ = 2π
+    linarith
+  · -- LHS = translation
+    exact morley_lhs_eq_translation A B C α β γ hsum
+
+/-- Key reduction: If the triple rotation (with cubed angles) fixes A,
+    then the Morley LHS = 0.
+
+    This combines:
+    1. morley_lhs_is_translation: Morley LHS = translation
+    2. triple_rotation_fixes_A_implies_lhs_zero: rotation fixes A → translation = 0 -/
+theorem morley_lhs_zero_if_rotation_fixes_A (A B C : ℂ) (α β γ : ℝ)
+    (hsum : α + β + γ = Real.pi / 3)
+    (hfix : rotation A (6 * α) (rotation B (6 * β) (rotation C (6 * γ) A)) = A) :
+    let a₁ := cis (2 * α)
+    let a₂ := cis (2 * β)
+    let a₃ := cis (2 * γ)
+    (a₁ ^ 2 + a₁ + 1) * (A * (1 - a₁)) +
+    a₁ ^ 3 * (a₂ ^ 2 + a₂ + 1) * (B * (1 - a₂)) +
+    a₁ ^ 3 * a₂ ^ 3 * (a₃ ^ 2 + a₃ + 1) * (C * (1 - a₃)) = 0 := by
+  simp only
+  -- Get that θ₁ + θ₂ + θ₃ = 2π
+  have hsum6 : 6 * α + 6 * β + 6 * γ = 2 * Real.pi := by linarith
+  -- Get translation = 0 from rotation fixing A
+  have htrans := triple_rotation_fixes_A_implies_lhs_zero A B C (6*α) (6*β) (6*γ) hsum6 hfix
+  -- Connect to Morley LHS
+  have heq := morley_lhs_eq_translation A B C α β γ hsum
+  rw [heq, htrans]
+
+/-- The triple rotation with doubled angles (2∠A, 2∠B, 2∠C) is equivalent to
+    the triple cubed rotation with trisected angles (6α, 6β, 6γ where α = ∠A/3).
+
+    This is immediate since 6*(∠A/3) = 2*∠A. -/
+theorem doubled_angles_eq_cubed_trisected (A B C : ℂ) (α β γ : ℝ)
+    (hα : α = angle_at B A C / 3) (hβ : β = angle_at C B A / 3) (hγ : γ = angle_at A C B / 3) :
+    6 * α = 2 * angle_at B A C ∧ 6 * β = 2 * angle_at C B A ∧ 6 * γ = 2 * angle_at A C B := by
+  constructor
+  · rw [hα]; ring
+  constructor
+  · rw [hβ]; ring
+  · rw [hγ]; ring
+
 end Morley
