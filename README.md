@@ -84,6 +84,8 @@ Is that thing Morley's?
 
 Well . . . I think so. Again, I'm not a mathematician, but I do have basic knowledge and can read computer code. I look over the theorem definition and say "yeah, that's not obviously wrong, at least", I didn't have it write three thousand lines of Lean just to prove 1=1. However, I do need to run this past an actual mathematician. Perhaps there's some deep flaw in the fundamental theorem definition that makes this entirely invalid. I dunno.
 
+(The two things I find sketchiest is that `morleyVertex` is too complicated for me to grok, and `NonCollinear` feels like a yellow flag to me; shouldn't this be implied by the angle constraints? Or is this just to ensure that the three points are distinct so that angle_at doesn't explode? If I change it to ignore the actual collinearity, stuff breaks, but maybe the main theorem just needs vertex uniqueness, could derive full noncollinearity from there, and the subtheorems could still rely on full noncollinearity.)
+
 Assuming it's valid, though . . .
 
 . . . I don't actually know if Mathlib wants it.
