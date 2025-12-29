@@ -444,4 +444,57 @@ theorem img_r_sym {z1 z2 z : ℂ} (h12 : z1 ≠ z2) (hz_line : z ∉ line z1 z2)
     _ = z1 + w * cis (-2 * Complex.arg w) * (z2 - z1) := by rw [hsym_sub]
     _ = z1 + (z - z1) * cis (-2 * angle_at z z1 z2) := by rw [← hrot_sub]
 
+/-! ## Infrastructure for Triple Rotation Proof
+
+The key geometric fact for Morley's theorem is that the LHS polynomial vanishes.
+The full proof (following Isabelle AFP) requires showing that the composition of
+three cubed rotations fixes vertex A, which then implies LHS = 0.
+
+The machinery developed here (img_r_sym, angle negation, etc.) provides the
+foundation for this proof. The complete proof requires tracking how angle
+trisector lines interact with axial symmetry.
+-/
+
+/-- The simplified form of LHS using the factorization (x² + x + 1)(1-x) = 1 - x³ -/
+theorem lhs_simplified_form (A B C : ℂ) (a b c : ℂ) (habc : a * b * c = 1) :
+    (1 - a) * A + a * (1 - b) * B + a * b * (1 - c) * C =
+    A - C + a * (B - A) + a * b * (C - B) := by
+  have hc : a * b * c * C = C := by rw [habc, one_mul]
+  calc (1 - a) * A + a * (1 - b) * B + a * b * (1 - c) * C
+      = A - a * A + a * B - a * b * B + a * b * C - a * b * c * C := by ring
+    _ = A - a * A + a * B - a * b * B + a * b * C - C := by rw [hc]
+    _ = A - C + a * (B - A) + a * b * (C - B) := by ring
+
+/-- When 6α + 6β + 6γ = 2π, the product of cubed cis values is 1 -/
+theorem cis_cubed_product_one (α β γ : ℝ) (hsum : α + β + γ = Real.pi / 3) :
+    cis (2 * α) ^ 3 * cis (2 * β) ^ 3 * cis (2 * γ) ^ 3 = 1 := by
+  have hsum6 : 6 * α + 6 * β + 6 * γ = 2 * Real.pi := by linarith
+  have h1 : cis (2 * α) ^ 3 = cis (6 * α) := by
+    simp only [pow_succ, pow_zero, one_mul]
+    rw [← cis_add, ← cis_add]; congr 1; ring
+  have h2 : cis (2 * β) ^ 3 = cis (6 * β) := by
+    simp only [pow_succ, pow_zero, one_mul]
+    rw [← cis_add, ← cis_add]; congr 1; ring
+  have h3 : cis (2 * γ) ^ 3 = cis (6 * γ) := by
+    simp only [pow_succ, pow_zero, one_mul]
+    rw [← cis_add, ← cis_add]; congr 1; ring
+  rw [h1, h2, h3, ← cis_add, ← cis_add, hsum6, cis_two_pi]
+
+/-- The LHS can be rewritten in simplified form using the (x²+x+1)(1-x) = 1-x³ identity -/
+theorem lhs_rewrite (A B C : ℂ) (a₁ a₂ a₃ : ℂ) :
+    (a₁ ^ 2 + a₁ + 1) * (A * (1 - a₁)) +
+    a₁ ^ 3 * (a₂ ^ 2 + a₂ + 1) * (B * (1 - a₂)) +
+    a₁ ^ 3 * a₂ ^ 3 * (a₃ ^ 2 + a₃ + 1) * (C * (1 - a₃)) =
+    (1 - a₁ ^ 3) * A + a₁ ^ 3 * (1 - a₂ ^ 3) * B + a₁ ^ 3 * a₂ ^ 3 * (1 - a₃ ^ 3) * C := by
+  have hf₁ : (a₁ ^ 2 + a₁ + 1) * (1 - a₁) = 1 - a₁ ^ 3 := by ring
+  have hf₂ : (a₂ ^ 2 + a₂ + 1) * (1 - a₂) = 1 - a₂ ^ 3 := by ring
+  have hf₃ : (a₃ ^ 2 + a₃ + 1) * (1 - a₃) = 1 - a₃ ^ 3 := by ring
+  calc (a₁ ^ 2 + a₁ + 1) * (A * (1 - a₁)) + a₁ ^ 3 * (a₂ ^ 2 + a₂ + 1) * (B * (1 - a₂)) +
+      a₁ ^ 3 * a₂ ^ 3 * (a₃ ^ 2 + a₃ + 1) * (C * (1 - a₃))
+      = A * ((a₁ ^ 2 + a₁ + 1) * (1 - a₁)) + a₁ ^ 3 * B * ((a₂ ^ 2 + a₂ + 1) * (1 - a₂)) +
+        a₁ ^ 3 * a₂ ^ 3 * C * ((a₃ ^ 2 + a₃ + 1) * (1 - a₃)) := by ring
+    _ = A * (1 - a₁ ^ 3) + a₁ ^ 3 * B * (1 - a₂ ^ 3) + a₁ ^ 3 * a₂ ^ 3 * C * (1 - a₃ ^ 3) := by
+        rw [hf₁, hf₂, hf₃]
+    _ = (1 - a₁ ^ 3) * A + a₁ ^ 3 * (1 - a₂ ^ 3) * B + a₁ ^ 3 * a₂ ^ 3 * (1 - a₃ ^ 3) * C := by ring
+
 end Morley
