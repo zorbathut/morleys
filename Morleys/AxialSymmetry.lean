@@ -211,68 +211,237 @@ Proof sketch for angle_at_to_reflected:
                                    = 2 * angle_at z z1 z2
 -/
 
+/-- Key algebraic identity: the ratio for the reflected point equals the conjugate of the original ratio.
+    This is the core of the angle negation proof. -/
+theorem axialSymmetry_ratio_eq_conj {z1 z2 z : ℂ} (h12 : z1 ≠ z2) :
+    (axialSymmetry z1 z2 z - z1) / (z2 - z1) =
+    starRingEnd ℂ ((z - z1) / (z2 - z1)) := by
+  -- From axialSymmetry z1 z2 z1 = z1, we have conj(z1) * α + β = z1
+  -- So: axialSymmetry z - z1 = conj(z) * α + β - (conj(z1) * α + β)
+  --                         = (conj(z) - conj(z1)) * α = conj(z - z1) * α
+  have hα := axialSymmetry_z1_fixed h12
+  -- Express axialSymmetry z - z1
+  have hdiff : axialSymmetry z1 z2 z - z1 = starRingEnd ℂ (z - z1) * axialAlpha z1 z2 := by
+    have : axialSymmetry z1 z2 z - axialSymmetry z1 z2 z1 =
+        (starRingEnd ℂ z - starRingEnd ℂ z1) * axialAlpha z1 z2 := by
+      unfold axialSymmetry
+      ring
+    rw [hα] at this
+    rw [this, map_sub]
+  have hdenom := conj_diff_ne_zero h12
+  have hdenom2 : z2 - z1 ≠ 0 := sub_ne_zero.mpr h12.symm
+  have hconj21 : starRingEnd ℂ z2 - starRingEnd ℂ z1 ≠ 0 := conj_diff_ne_zero h12.symm
+  rw [hdiff]
+  -- α = (z1 - z2) / conj(z1 - z2)
+  -- We compute: conj(z-z1) * α / (z2-z1)
+  -- = conj(z-z1) * (z1-z2) / (conj(z1-z2) * (z2-z1))
+  -- Key: (z1-z2)/(z2-z1) = -1 and conj(z1-z2) = -conj(z2-z1)
+  -- So: = conj(z-z1) * (-1) / (-conj(z2-z1))
+  --     = conj(z-z1) / conj(z2-z1)
+  --     = conj((z-z1)/(z2-z1))
+  calc starRingEnd ℂ (z - z1) * axialAlpha z1 z2 / (z2 - z1)
+      = starRingEnd ℂ (z - z1) * ((z1 - z2) / (starRingEnd ℂ z1 - starRingEnd ℂ z2)) / (z2 - z1) := rfl
+    _ = starRingEnd ℂ (z - z1) * (z1 - z2) / ((starRingEnd ℂ z1 - starRingEnd ℂ z2) * (z2 - z1)) := by
+        field_simp [hdenom, hdenom2]
+    _ = starRingEnd ℂ (z - z1) * (-(z2 - z1)) / ((-(starRingEnd ℂ z2 - starRingEnd ℂ z1)) * (z2 - z1)) := by
+        ring_nf
+    _ = starRingEnd ℂ (z - z1) * (-(z2 - z1)) / (-(starRingEnd ℂ z2 - starRingEnd ℂ z1) * (z2 - z1)) := rfl
+    _ = starRingEnd ℂ (z - z1) / (starRingEnd ℂ z2 - starRingEnd ℂ z1) := by
+        have h1 : (-(z2 - z1) : ℂ) / (-(starRingEnd ℂ z2 - starRingEnd ℂ z1) * (z2 - z1)) =
+                  1 / (starRingEnd ℂ z2 - starRingEnd ℂ z1) := by
+          field_simp [hdenom2, hconj21]
+        rw [mul_div_assoc, h1, mul_one_div]
+    _ = starRingEnd ℂ (z - z1) / starRingEnd ℂ (z2 - z1) := by simp only [map_sub]
+    _ = starRingEnd ℂ ((z - z1) / (z2 - z1)) := by rw [map_div₀]
+
 /-- The angle flips sign under reflection (for points not on the line).
 
-    Proof outline from Isabelle AFP (Complex_Axial_Symmetry.thy, angle_symmetry_eq):
-    1. Either angle_at z z1 z2 = angle_at (axialSymmetry z) z1 z2, or they are negatives
-    2. The "equal" case implies z = axialSymmetry z (by uniqueness)
-    3. But z = axialSymmetry z only for points on the line
-    4. So for z not on line, the angles are negatives -/
+    Proof: The ratio (axialSymmetry z - z1)/(z2 - z1) equals conj((z - z1)/(z2 - z1)),
+    and arg(conj(w)) = -arg(w) for non-real w. -/
 theorem angle_at_axialSymmetry_neg {z1 z2 z : ℂ} (h12 : z1 ≠ z2)
-    (hz1 : z ≠ z1) (hz2 : z ≠ z2) (hz_line : z ∉ line z1 z2) :
+    (hz1 : z ≠ z1) (_hz2 : z ≠ z2) (hz_line : z ∉ line z1 z2) :
     angle_at (axialSymmetry z1 z2 z) z1 z2 = -angle_at z z1 z2 := by
-  -- Step 1: Either equal or negatives (by congruent triangle argument)
-  -- Step 2: If equal, then z = axialSymmetry z (by same distance and same angle)
-  -- Step 3: z = axialSymmetry z implies z is on line (by axialSymmetry_eq_line)
-  -- Step 4: Contradiction with hz_line
-  sorry
+  -- First, show the reflected point is also distinct from z1 and z2
+  have hsym_ne_z1 : axialSymmetry z1 z2 z ≠ z1 := by
+    intro heq
+    -- If axialSymmetry z = z1, then by involutive property, z = axialSymmetry z1 = z1
+    have : z = axialSymmetry z1 z2 (axialSymmetry z1 z2 z) := (axialSymmetry_involutive h12 z).symm
+    rw [heq, axialSymmetry_z1_fixed h12] at this
+    exact hz1 this
+  -- Use the key algebraic identity
+  have hratio := axialSymmetry_ratio_eq_conj h12 (z := z)
+  -- angle_at (axialSymmetry z) z1 z2 = arg((axialSymmetry z - z1)/(z2 - z1))
+  unfold angle_at
+  rw [hratio]
+  -- Now we need arg(conj(w)) = -arg(w) for w not on negative real axis
+  -- The ratio (z - z1)/(z2 - z1) is non-real because z ∉ line z1 z2
+  set w := (z - z1) / (z2 - z1) with hw_def
+  -- w ≠ 0
+  have hw_ne : w ≠ 0 := by
+    simp only [hw_def]
+    exact div_ne_zero (sub_ne_zero.mpr hz1) (sub_ne_zero.mpr h12.symm)
+  -- w is not real (since z is not on the line through z1 and z2)
+  have hw_not_real : ∀ r : ℝ, w ≠ r := by
+    intro r hr
+    apply hz_line
+    -- If (z - z1)/(z2 - z1) = r (real), then z - z1 = r * (z2 - z1)
+    -- So z = z1 + r * (z2 - z1), meaning z is on the line
+    simp only [line, Set.mem_setOf_eq]
+    use r
+    have h21 : z2 - z1 ≠ 0 := sub_ne_zero.mpr h12.symm
+    have heq : z - z1 = w * (z2 - z1) := by
+      simp only [hw_def]
+      field_simp [h21]
+    rw [heq, hr]
+    simp only [Complex.real_smul]
+  -- In particular, w.im ≠ 0 (so w is not on real axis)
+  have hw_im_ne : w.im ≠ 0 := by
+    intro him
+    have hreal : w = (w.re : ℂ) := by
+      apply Complex.ext <;> simp [him]
+    exact hw_not_real w.re hreal
+  -- arg(conj w) = -arg(w) when w.im ≠ 0
+  -- Use Complex.arg_conj with the fact that arg w ≠ π (since w.im ≠ 0)
+  have harg_ne_pi : Complex.arg w ≠ Real.pi := by
+    intro harg
+    rw [Complex.arg_eq_pi_iff] at harg
+    exact hw_im_ne harg.2
+  simp only [Complex.arg_conj, if_neg harg_ne_pi]
 
 /-! ## Points on the Line -/
 
 /-- A point on the line is fixed by axial symmetry.
 
-    Proof outline from Isabelle AFP (Complex_Axial_Symmetry.thy, line_is_inv):
-    1. For z on line z1-z2 (and z ≠ z1, z ≠ z2), angle_at z z1 z2 = 0 or π
-    2. Negating 0 gives 0, and -π ≡ π (mod 2π)
-    3. So angle_at (axialSymmetry z) z1 z2 = angle_at z z1 z2
-    4. Combined with equal distances, by uniqueness z = axialSymmetry z -/
+    Direct computation: if z = z1 + t*(z2-z1) for real t, then
+    axialSymmetry z1 z2 z = z. -/
 theorem axialSymmetry_line_fixed {z1 z2 z : ℂ} (h12 : z1 ≠ z2)
-    (hz1 : z ≠ z1) (hz2 : z ≠ z2) (hz_line : z ∈ line z1 z2) :
+    (_hz1 : z ≠ z1) (_hz2 : z ≠ z2) (hz_line : z ∈ line z1 z2) :
     axialSymmetry z1 z2 z = z := by
-  -- Step 1: z on line implies angle is 0 or π
-  -- Step 2: -0 = 0 and -π = π (as angles)
-  -- Step 3: By angle_symmetry_eq_imp, angles are equal
-  -- Step 4: By uniqueness (same distance and angle from z1), z = axialSymmetry z
-  sorry
+  -- z ∈ line z1 z2 means ∃ t : ℝ, z - z1 = t • (z2 - z1)
+  simp only [line, Set.mem_setOf_eq] at hz_line
+  obtain ⟨t, ht⟩ := hz_line
+  -- So z = z1 + t * (z2 - z1)
+  have hz : z = z1 + t * (z2 - z1) := by
+    calc z = z1 + (z - z1) := by ring
+      _ = z1 + t • (z2 - z1) := by rw [ht]
+      _ = z1 + t * (z2 - z1) := by simp [Complex.real_smul]
+  -- conj(z) = conj(z1) + t * (conj(z2) - conj(z1)) since t is real
+  have hconj_z : starRingEnd ℂ z = starRingEnd ℂ z1 + t * (starRingEnd ℂ z2 - starRingEnd ℂ z1) := by
+    rw [hz]; simp only [map_add, map_mul, map_sub, Complex.conj_ofReal]
+  have hdenom : starRingEnd ℂ z1 - starRingEnd ℂ z2 ≠ 0 := conj_diff_ne_zero h12
+  -- Compute axialSymmetry z = conj(z) * α + β directly
+  simp only [axialSymmetry, axialAlpha, axialBeta]
+  rw [hconj_z]
+  -- The RHS is z = z1 + t*(z2-z1), substitute that too
+  conv_rhs => rw [hz]
+  -- Now both sides are in terms of z1, z2, t and their conjugates
+  field_simp [hdenom]
+  ring
 
 /-! ## The Key Lemma: img_r_sym
 
 This is the critical connection between reflection and rotation that enables
 the proof of Morley's theorem.
 
-**Proof Strategy:**
-1. Both axialSymmetry and rotation preserve distance from z1:
-   - `axialSymmetry_dist_from_z1`: ‖z1 - z‖ = ‖z1 - axialSymmetry z1 z2 z‖
-   - `rotation_dist_center`: ‖rotation z1 θ z - z1‖ = ‖z - z1‖
+**Algebraic Proof:**
 
-2. The angle from z to its reflection around z1 equals 2 * angle_at z z1 z2:
-   - By angle additivity: angle_at z z1 (axialSymmetry z) = angle_at z z1 z2 + angle_at z2 z1 (axialSymmetry z)
-   - By angle_at_axialSymmetry_neg: angle_at (axialSymmetry z) z1 z2 = -angle_at z z1 z2
-   - Combining: angle_at z z1 (axialSymmetry z) = 2 * angle_at z z1 z2
+From `axialSymmetry_ratio_eq_conj`:
+  (axialSymmetry z1 z2 z - z1) / (z2 - z1) = conj((z - z1) / (z2 - z1))
 
-3. The angle from z to its rotation around z1 equals θ (the rotation angle).
+Let w = (z - z1) / (z2 - z1) and φ = arg(w) = angle_at z z1 z2.
+Then conj(w) = |w| * cis(-φ).
 
-4. A point is uniquely determined by its distance from z1 and angle from z.
-   Therefore axialSymmetry z = rotation z1 (2 * angle_at z z1 z2) z. -/
+For the rotation by θ:
+  (rotation z1 θ z - z1) / (z2 - z1) = (z - z1) * cis(θ) / (z2 - z1) = w * cis(θ) = |w| * cis(φ + θ)
+
+For these to be equal: cis(-φ) = cis(φ + θ), so θ = -2φ.
+
+Therefore: axialSymmetry z1 z2 z = rotation z1 (-2 * angle_at z z1 z2) z -/
 theorem img_r_sym {z1 z2 z : ℂ} (h12 : z1 ≠ z2) (hz_line : z ∉ line z1 z2) :
-    axialSymmetry z1 z2 z = rotation z1 (2 * angle_at z z1 z2) z := by
-  -- Step 1: Same distance from z1
-  have hdist1 : ‖z1 - z‖ = ‖z1 - axialSymmetry z1 z2 z‖ := axialSymmetry_dist_from_z1 h12 z
-  have hdist2 : ‖rotation z1 (2 * angle_at z z1 z2) z - z1‖ = ‖z - z1‖ := rotation_dist_center z1 _ z
-  -- Step 2: The angle from z to the reflection equals 2 * angle_at z z1 z2
-  -- This requires angle_sum and angle_at_axialSymmetry_neg
-  -- Step 3: The angle from z to the rotation equals 2 * angle_at z z1 z2 (by definition)
-  -- Step 4: Uniqueness implies equality
-  sorry
+    axialSymmetry z1 z2 z = rotation z1 (-2 * angle_at z z1 z2) z := by
+  -- z not on line implies z ≠ z1
+  have hz1 : z ≠ z1 := by
+    intro heq
+    apply hz_line
+    simp only [line, Set.mem_setOf_eq]
+    use 0
+    simp [heq]
+  have h21 : z2 - z1 ≠ 0 := sub_ne_zero.mpr h12.symm
+  -- Let w = (z - z1) / (z2 - z1)
+  set w := (z - z1) / (z2 - z1) with hw_def
+  have hw_ne : w ≠ 0 := div_ne_zero (sub_ne_zero.mpr hz1) h21
+  -- Key identity: conj(w) = w * cis(-2 * arg(w))
+  -- Proof: w = |w| * cis(arg w), so conj(w) = |w| * cis(-arg w)
+  --        w * cis(-2*arg w) = |w| * cis(arg w - 2*arg w) = |w| * cis(-arg w)
+  have hconj_w : starRingEnd ℂ w = w * cis (-2 * Complex.arg w) := by
+    -- Key: conj(w) = w * exp(-2*I*arg(w))
+    -- Using w = |w| * exp(I*arg(w)), we have conj(w) = |w| * exp(-I*arg(w))
+    -- And w * exp(-2*I*arg(w)) = |w| * exp(I*arg(w)) * exp(-2*I*arg(w)) = |w| * exp(-I*arg(w))
+    --
+    -- Proof using conjugation formula: conj(w) / w = conj(w) * conj(conj(w)) / (w * conj(w))
+    --                                              = |conj(w)|² / |w|² = 1
+    -- Actually, simpler: conj(w) * w = |w|², so conj(w) = |w|² / w
+    -- And cis(-2*arg(w)) = exp(-2i*arg(w)) = (exp(i*arg(w)))^(-2) = (w/|w|)^(-2) = |w|²/w²
+    -- So w * cis(-2*arg(w)) = w * |w|²/w² = |w|²/w = conj(w) ✓
+    --
+    -- Alternative: use conj(w) = |w|² * w⁻¹ and cis(-2θ) = exp(-2iθ) = cis(θ)⁻² = (w/|w|)⁻²
+    have hnorm_sq : w * starRingEnd ℂ w = ↑(‖w‖^2) := by
+      rw [mul_comm, ← Complex.normSq_eq_conj_mul_self]
+      simp [Complex.normSq_eq_norm_sq]
+    have hcis_sq : cis (-2 * Complex.arg w) = (cis (Complex.arg w))⁻¹ * (cis (Complex.arg w))⁻¹ := by
+      have h1 : (cis (Complex.arg w))⁻¹ = cis (-Complex.arg w) := by
+        simp only [cis]
+        rw [← Complex.exp_neg]
+        congr 1
+        push_cast
+        ring
+      rw [h1]
+      rw [← cis_add]
+      congr 1
+      ring
+    -- cis(arg w) = exp(i*arg w) = w / |w|
+    have hcis_eq : cis (Complex.arg w) = w / ↑‖w‖ := by
+      have h := Complex.norm_mul_exp_arg_mul_I w
+      simp only [cis]
+      have hnorm_ne : (‖w‖ : ℂ) ≠ 0 := by simp [hw_ne]
+      field_simp [hnorm_ne]
+      rw [mul_comm] at h
+      exact h
+    -- cis(arg w)⁻¹ = |w| / w (since cis(arg w) = w / |w|)
+    have hcis_inv_eq : (cis (Complex.arg w))⁻¹ = ↑‖w‖ / w := by
+      rw [hcis_eq]
+      field_simp [hw_ne]
+    -- conj(w) = |w|² / w and cis(-2*arg w) = (cis(arg w)⁻¹)² = |w|² / w²
+    -- So w * cis(-2*arg w) = w * |w|² / w² = |w|² / w = conj(w)
+    have hnorm_ne : (‖w‖ : ℂ) ≠ 0 := by simp [hw_ne]
+    calc starRingEnd ℂ w
+        = ↑(‖w‖^2) / w := by
+          rw [← hnorm_sq]
+          field_simp [hw_ne]
+      _ = w * ((cis (Complex.arg w))⁻¹ * (cis (Complex.arg w))⁻¹) := by
+          rw [hcis_inv_eq]
+          have h : (↑(‖w‖ ^ 2) : ℂ) = ↑‖w‖ * ↑‖w‖ := by push_cast; ring
+          rw [h]
+          field_simp [hw_ne, hnorm_ne]
+      _ = w * cis (-2 * Complex.arg w) := by rw [hcis_sq]
+  -- angle_at z z1 z2 = arg w
+  have hangle : angle_at z z1 z2 = Complex.arg w := rfl
+  -- From axialSymmetry_ratio_eq_conj: (axialSymmetry z - z1) / (z2 - z1) = conj(w)
+  have hratio := axialSymmetry_ratio_eq_conj h12 (z := z)
+  -- So axialSymmetry z - z1 = conj(w) * (z2 - z1) = w * cis(-2*arg w) * (z2 - z1)
+  have hsym_sub : axialSymmetry z1 z2 z - z1 = w * cis (-2 * Complex.arg w) * (z2 - z1) := by
+    have h : (axialSymmetry z1 z2 z - z1) / (z2 - z1) = w * cis (-2 * Complex.arg w) := by
+      rw [hratio, hconj_w]
+    field_simp [h21] at h ⊢
+    exact h
+  -- And (z - z1) * cis(-2*angle) = w * (z2-z1) * cis(-2*arg w) [with commutation]
+  have hrot_sub : (z - z1) * cis (-2 * angle_at z z1 z2) = w * cis (-2 * Complex.arg w) * (z2 - z1) := by
+    simp only [hw_def, hangle]
+    field_simp [h21]
+  -- Therefore axialSymmetry z = z1 + (z - z1) * cis(-2*angle)
+  simp only [rotation]
+  calc axialSymmetry z1 z2 z = z1 + (axialSymmetry z1 z2 z - z1) := by ring
+    _ = z1 + w * cis (-2 * Complex.arg w) * (z2 - z1) := by rw [hsym_sub]
+    _ = z1 + (z - z1) * cis (-2 * angle_at z z1 z2) := by rw [← hrot_sub]
 
 end Morley
