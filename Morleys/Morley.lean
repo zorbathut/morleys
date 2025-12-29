@@ -5,6 +5,7 @@ Authors: Claude
 -/
 import Morleys.Connes
 import Morleys.Triangle
+import Morleys.AxialSymmetry
 
 /-!
 # Morley's Trisector Theorem
@@ -205,10 +206,6 @@ theorem poly_factor (x : ℂ) : (x ^ 2 + x + 1) * (1 - x) = 1 - x ^ 3 := by ring
     of triangle ABC), the LHS polynomial vanishes.
 
     This is the key geometric fact from the Isabelle AFP proof (Morley.thy, g22).
-    The Isabelle proof uses axial symmetry to show:
-    1. The composition of cubed rotations is a translation (since total angle = 2π)
-    2. The translation fixes vertex A (via angle trisection symmetry)
-    3. Therefore the translation is zero, so LHS = 0
 
     **Variable assignment** (for (A,B,C) order - first rotate at A, then B, then C):
     - a₁ = cis(2γ), with C  (outermost rotation at C)
@@ -217,11 +214,13 @@ theorem poly_factor (x : ℂ) : (x ^ 2 + x + 1) * (1 - x) = 1 - x ^ 3 := by ring
 
     The LHS with this assignment simplifies (via lhs_rewrite) to:
     (1 - c³)*C + c³*(1 - b³)*B + c³*b³*(1 - a³)*A
-    which equals the (A,B,C) translation formula (bc-1)*A + c*(1-b)*B + (1-c)*C,
-    which IS zero for any triangle with positive angles.
+    which equals the (A,B,C) translation formula (b³c³-1)*A + c³*(1-b³)*B + (1-c³)*C
+    (via simplified_lhs_eq_translation, since a³*b³*c³ = 1),
+    which IS zero for any triangle with positive angles
+    (via translation_ABC_zero_for_doubled_angles).
 
     Key reference: Isabelle AFP, Morley_Theorem/Morley.thy, lemmas g20-g22 and very_imp. -/
-axiom triple_rotation_lhs_zero (A B C : ℂ) (hnd : NonCollinear A B C)
+theorem triple_rotation_lhs_zero (A B C : ℂ) (hnd : NonCollinear A B C)
     (hpos : 0 < angle_at B A C ∧ 0 < angle_at C B A ∧ 0 < angle_at A C B) :
     let α := angle_at B A C / 3
     let β := angle_at C B A / 3
@@ -232,7 +231,53 @@ axiom triple_rotation_lhs_zero (A B C : ℂ) (hnd : NonCollinear A B C)
     -- Swapped LHS: (C, B, A) with (γ, β, α) - this equals the ABC translation which IS zero
     (c ^ 2 + c + 1) * (C * (1 - c)) +
     c ^ 3 * (b ^ 2 + b + 1) * (B * (1 - b)) +
-    c ^ 3 * b ^ 3 * (a ^ 2 + a + 1) * (A * (1 - a)) = 0
+    c ^ 3 * b ^ 3 * (a ^ 2 + a + 1) * (A * (1 - a)) = 0 := by
+  -- Introduce the let bindings
+  intro α β γ a b c
+  -- Step 1: Rewrite using lhs_rewrite to get simplified form
+  have hlhs : (c ^ 2 + c + 1) * (C * (1 - c)) + c ^ 3 * (b ^ 2 + b + 1) * (B * (1 - b)) +
+              c ^ 3 * b ^ 3 * (a ^ 2 + a + 1) * (A * (1 - a)) =
+              (1 - c ^ 3) * C + c ^ 3 * (1 - b ^ 3) * B + c ^ 3 * b ^ 3 * (1 - a ^ 3) * A :=
+    lhs_rewrite C B A c b a
+  rw [hlhs]
+  -- Step 2: Cubed cis values to doubled angles
+  have ha3 : a ^ 3 = cis (2 * angle_at B A C) := by
+    show cis (2 * α) ^ 3 = cis (2 * angle_at B A C)
+    rw [pow_succ, pow_succ, pow_one, ← cis_add, ← cis_add]
+    congr 1
+    show 2 * α + 2 * α + 2 * α = 2 * angle_at B A C
+    ring
+  have hb3 : b ^ 3 = cis (2 * angle_at C B A) := by
+    show cis (2 * β) ^ 3 = cis (2 * angle_at C B A)
+    rw [pow_succ, pow_succ, pow_one, ← cis_add, ← cis_add]
+    congr 1
+    show 2 * β + 2 * β + 2 * β = 2 * angle_at C B A
+    ring
+  have hc3 : c ^ 3 = cis (2 * angle_at A C B) := by
+    show cis (2 * γ) ^ 3 = cis (2 * angle_at A C B)
+    rw [pow_succ, pow_succ, pow_one, ← cis_add, ← cis_add]
+    congr 1
+    show 2 * γ + 2 * γ + 2 * γ = 2 * angle_at A C B
+    ring
+  -- Rewrite to doubled angle form
+  rw [ha3, hb3, hc3]
+  -- Step 3: Use the product identity
+  have hsum := trisected_angles_sum hnd hpos
+  have hprod := cis_cubed_product_one α β γ hsum
+  -- The cubed values satisfy a³ * b³ * c³ = 1
+  have hprod_cubed : cis (2 * angle_at B A C) * cis (2 * angle_at C B A) *
+                     cis (2 * angle_at A C B) = 1 := by
+    simp only [← ha3, ← hb3, ← hc3]
+    exact hprod
+  -- Step 4: Apply simplified_lhs_eq_translation
+  have hbridge := simplified_lhs_eq_translation A B C
+    (cis (2 * angle_at B A C))
+    (cis (2 * angle_at C B A))
+    (cis (2 * angle_at A C B))
+    hprod_cubed
+  rw [hbridge]
+  -- Step 5: Apply translation_ABC_zero_for_doubled_angles
+  exact translation_ABC_zero_for_doubled_angles A B C hnd hpos
 
 /-! ## Main Theorem -/
 
