@@ -237,40 +237,51 @@ theorem lhs_zero_when_identity (a₁ a₂ a₃ b₁ b₂ b₃ : ℂ)
     an equilateral triangle.
 
     The condition hLHS encapsulates that the composition of three cubed rotations
-    is the identity, which is derived from the geometric setup in the full proof. -/
+    is the identity, which is derived from the geometric setup in the full proof.
+
+    **Variable assignment** (for (A,B,C) order - first rotate at A, then B, then C):
+    - a₁ = cis(2γ), b₁ = C*(1-a₁)  (outermost rotation at C)
+    - a₂ = cis(2β), b₂ = B*(1-a₂)  (middle rotation at B)
+    - a₃ = cis(2α), b₃ = A*(1-a₃)  (innermost rotation at A)
+
+    This swaps (A,α) ↔ (C,γ) compared to the (C,B,A) order, giving an LHS that
+    equals the (A,B,C) translation formula which IS zero for any triangle. -/
 theorem morley_triangle_equilateral (A B C : ℂ) (α β γ : ℝ)
     (hsum : α + β + γ = Real.pi / 3)
     (R P Q : ℂ)
-    (hR : R = (cis (2 * α) * (B * (1 - cis (2 * β))) + A * (1 - cis (2 * α))) /
-              (1 - cis (2 * α) * cis (2 * β)))
-    (hP : P = (cis (2 * β) * (C * (1 - cis (2 * γ))) + B * (1 - cis (2 * β))) /
-              (1 - cis (2 * β) * cis (2 * γ)))
-    (hQ : Q = (cis (2 * γ) * (A * (1 - cis (2 * α))) + C * (1 - cis (2 * γ))) /
-              (1 - cis (2 * γ) * cis (2 * α)))
-    (h₁₂ : cis (2 * α) * cis (2 * β) ≠ 1)
-    (h₂₃ : cis (2 * β) * cis (2 * γ) ≠ 1)
-    (h₁₃ : cis (2 * α) * cis (2 * γ) ≠ 1)
-    -- This is the key condition: LHS = 0, derived from triple cubed rotation = identity
-    (hLHS : (cis (2 * α) ^ 2 + cis (2 * α) + 1) * (A * (1 - cis (2 * α))) +
-            cis (2 * α) ^ 3 * (cis (2 * β) ^ 2 + cis (2 * β) + 1) * (B * (1 - cis (2 * β))) +
-            cis (2 * α) ^ 3 * cis (2 * β) ^ 3 * (cis (2 * γ) ^ 2 + cis (2 * γ) + 1) *
-              (C * (1 - cis (2 * γ))) = 0) :
+    -- R = fixed point of (rotation at C) ∘ (rotation at B)
+    (hR : R = (cis (2 * γ) * (B * (1 - cis (2 * β))) + C * (1 - cis (2 * γ))) /
+              (1 - cis (2 * γ) * cis (2 * β)))
+    -- P = fixed point of (rotation at B) ∘ (rotation at A)
+    (hP : P = (cis (2 * β) * (A * (1 - cis (2 * α))) + B * (1 - cis (2 * β))) /
+              (1 - cis (2 * β) * cis (2 * α)))
+    -- Q = fixed point of (rotation at A) ∘ (rotation at C)
+    (hQ : Q = (cis (2 * α) * (C * (1 - cis (2 * γ))) + A * (1 - cis (2 * α))) /
+              (1 - cis (2 * α) * cis (2 * γ)))
+    (h₁₂ : cis (2 * γ) * cis (2 * β) ≠ 1)
+    (h₂₃ : cis (2 * β) * cis (2 * α) ≠ 1)
+    (h₁₃ : cis (2 * γ) * cis (2 * α) ≠ 1)
+    -- This is the key condition: LHS = 0 (swapped assignment for (A,B,C) order)
+    (hLHS : (cis (2 * γ) ^ 2 + cis (2 * γ) + 1) * (C * (1 - cis (2 * γ))) +
+            cis (2 * γ) ^ 3 * (cis (2 * β) ^ 2 + cis (2 * β) + 1) * (B * (1 - cis (2 * β))) +
+            cis (2 * γ) ^ 3 * cis (2 * β) ^ 3 * (cis (2 * α) ^ 2 + cis (2 * α) + 1) *
+              (A * (1 - cis (2 * α))) = 0) :
     IsEquilateral R P Q := by
-  -- Set up notation
-  let a₁ := cis (2 * α)
+  -- Set up notation (swapped: a₁↔γ/C, a₃↔α/A)
+  let a₁ := cis (2 * γ)
   let a₂ := cis (2 * β)
-  let a₃ := cis (2 * γ)
-  let b₁ := A * (1 - a₁)
+  let a₃ := cis (2 * α)
+  let b₁ := C * (1 - a₁)
   let b₂ := B * (1 - a₂)
-  let b₃ := C * (1 - a₃)
-  -- The angles satisfy 2α + 2β + 2γ = 2π/3, so cis(2α)*cis(2β)*cis(2γ) = ω
+  let b₃ := A * (1 - a₃)
+  -- The angles satisfy 2α + 2β + 2γ = 2π/3, so cis(2γ)*cis(2β)*cis(2α) = ω
   have hprod : a₁ * a₂ * a₃ = ω := by
     apply cis_product_omega
     linarith [hsum]
   -- Show cis values are nonzero
-  have ha₁ : a₁ ≠ 0 := cis_ne_zero (2 * α)
+  have ha₁ : a₁ ≠ 0 := cis_ne_zero (2 * γ)
   have ha₂ : a₂ ≠ 0 := cis_ne_zero (2 * β)
-  have ha₃ : a₃ ≠ 0 := cis_ne_zero (2 * γ)
+  have ha₃ : a₃ ≠ 0 := cis_ne_zero (2 * α)
   -- Convert h₁₂, h₂₃, h₁₃ to the form needed
   have h₁₂' : 1 - a₁ * a₂ ≠ 0 := sub_ne_zero.mpr (Ne.symm h₁₂)
   have h₂₃' : 1 - a₂ * a₃ ≠ 0 := sub_ne_zero.mpr (Ne.symm h₂₃)
@@ -313,20 +324,17 @@ theorem morley_triangle_equilateral (A B C : ℂ) (α β γ : ℝ)
                    hprod h₁₂' h₂₃' h₁₃' ha₁ ha₂ ha₃ ha₁ω ha₂ω ha₃ω hLHS'
   -- hequil gives us: (a₁ * b₂ + b₁) / (1 - a₁ * a₂) + ω * P' + ω² * Q' = 0
   -- where P' = (a₂ * b₃ + b₂) / (1 - a₂ * a₃) and Q' = (a₃ * b₁ + b₃) / (1 - a₁ * a₃)
-  -- We need to show R = (a₁ * b₂ + b₁) / (1 - a₁ * a₂), etc.
   -- Show R, P, Q match the forms in morley_equilateral_condition
-  -- The definitions of R, P, Q in terms of a_i, b_i
   have hRdef : (a₁ * b₂ + b₁) / (1 - a₁ * a₂) =
-      (cis (2 * α) * (B * (1 - cis (2 * β))) + A * (1 - cis (2 * α))) / (1 - cis (2 * α) * cis (2 * β)) := by
+      (cis (2 * γ) * (B * (1 - cis (2 * β))) + C * (1 - cis (2 * γ))) / (1 - cis (2 * γ) * cis (2 * β)) := by
     rfl
   have hPdef : (a₂ * b₃ + b₂) / (1 - a₂ * a₃) =
-      (cis (2 * β) * (C * (1 - cis (2 * γ))) + B * (1 - cis (2 * β))) / (1 - cis (2 * β) * cis (2 * γ)) := by
+      (cis (2 * β) * (A * (1 - cis (2 * α))) + B * (1 - cis (2 * β))) / (1 - cis (2 * β) * cis (2 * α)) := by
     rfl
   have h13' : (1 : ℂ) - a₃ * a₁ = 1 - a₁ * a₃ := by ring
   have hQdef : (a₃ * b₁ + b₃) / (1 - a₁ * a₃) =
-      (cis (2 * γ) * (A * (1 - cis (2 * α))) + C * (1 - cis (2 * γ))) / (1 - cis (2 * γ) * cis (2 * α)) := by
+      (cis (2 * α) * (C * (1 - cis (2 * γ))) + A * (1 - cis (2 * α))) / (1 - cis (2 * α) * cis (2 * γ)) := by
     simp only [a₁, a₃, b₁, b₃, h13']
-  -- hequil is in terms of (a_i * b_j + b_i) / (1 - a_i * a_j)
   -- Convert to R, P, Q
   have hequil' : R + ω * P + ω ^ 2 * Q = 0 := by
     rw [hR, hP, hQ, ← hRdef, ← hPdef, ← hQdef]
