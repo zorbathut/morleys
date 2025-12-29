@@ -481,6 +481,108 @@ theorem rotation_6gamma_recovers_vertex (A B C : ℂ) (hCB : C ≠ B)
   rw [h6]
   exact rotation_of_axialSymmetry hCB hA_off_CB
 
+/-- rotation C (6γ) A equals rotation by 12γ of the reflected point.
+
+    This follows from: rotation C (6γ) (axialSymmetry C B A) = A
+    Applying rotation C (6γ) to both sides gives:
+    rotation C (6γ) A = rotation C (12γ) (axialSymmetry C B A) -/
+theorem rotation_6gamma_as_double_rotation (A B C : ℂ) (hCB : C ≠ B)
+    (hA_off_CB : A ∉ line C B) (γ : ℝ) (hγ : γ = angle_at A C B / 3) :
+    rotation C (6 * γ) A = rotation C (12 * γ) (axialSymmetry C B A) := by
+  have hrecov := rotation_6gamma_recovers_vertex A B C hCB hA_off_CB γ hγ
+  -- From hrecov: rotation C (6γ) (axialSymmetry C B A) = A
+  -- Apply rotation C (6γ) to A (which equals rotation C (6γ) (axialSymmetry C B A)):
+  calc rotation C (6 * γ) A
+      = rotation C (6 * γ) (rotation C (6 * γ) (axialSymmetry C B A)) := by rw [hrecov]
+    _ = rotation C (6 * γ + 6 * γ) (axialSymmetry C B A) := by rw [rotation_comp_same_center]
+    _ = rotation C (12 * γ) (axialSymmetry C B A) := by ring_nf
+
+/-- For a Morley triangle where 12γ = 4 * angle_at A C B, this equals rotation by 4 times the angle. -/
+theorem rotation_6gamma_explicit (A B C : ℂ) (hCB : C ≠ B)
+    (hA_off_CB : A ∉ line C B) (γ : ℝ) (hγ : γ = angle_at A C B / 3) :
+    rotation C (6 * γ) A = rotation C (4 * angle_at A C B) (axialSymmetry C B A) := by
+  have h12 : 12 * γ = 4 * angle_at A C B := by rw [hγ]; ring
+  rw [rotation_6gamma_as_double_rotation A B C hCB hA_off_CB γ hγ, h12]
+
+/-- When three rotation angles sum to 2π, the composition is a translation by the LHS vector.
+
+    Specifically: rotation A θ₁ ∘ rotation B θ₂ ∘ rotation C θ₃ = (· + LHS)
+    where LHS = (1 - cis θ₁) * A + cis θ₁ * (1 - cis θ₂) * B + cis θ₁ * cis θ₂ * (1 - cis θ₃) * C -/
+theorem triple_rotation_is_translation_by_lhs (A B C : ℂ) (θ₁ θ₂ θ₃ : ℝ)
+    (hsum : θ₁ + θ₂ + θ₃ = 2 * Real.pi) :
+    ∀ z : ℂ, rotation A θ₁ (rotation B θ₂ (rotation C θ₃ z)) = z +
+      ((1 - cis θ₁) * A + cis θ₁ * (1 - cis θ₂) * B + cis θ₁ * cis θ₂ * (1 - cis θ₃) * C) := by
+  intro z
+  simp only [rotation]
+  have hprod : cis θ₁ * cis θ₂ * cis θ₃ = 1 := by
+    rw [← cis_add, ← cis_add, hsum, cis_two_pi]
+  have hC : cis θ₁ * cis θ₂ * cis θ₃ * C = C := by rw [hprod, one_mul]
+  -- Direct ring calculation
+  calc A + (B + (C + (z - C) * cis θ₃ - B) * cis θ₂ - A) * cis θ₁
+      = A + (B - A) * cis θ₁ + (C - B) * cis θ₁ * cis θ₂ +
+        (z - C) * (cis θ₁ * cis θ₂ * cis θ₃) := by ring
+    _ = A + (B - A) * cis θ₁ + (C - B) * cis θ₁ * cis θ₂ + (z - C) := by rw [hprod]; ring
+    _ = z + (A - C + (B - A) * cis θ₁ + (C - B) * cis θ₁ * cis θ₂) := by ring
+    _ = z + (A - cis θ₁ * A + cis θ₁ * B - cis θ₁ * cis θ₂ * B +
+            cis θ₁ * cis θ₂ * C - C) := by ring
+    _ = z + (A - cis θ₁ * A + cis θ₁ * B - cis θ₁ * cis θ₂ * B +
+            cis θ₁ * cis θ₂ * C - cis θ₁ * cis θ₂ * cis θ₃ * C) := by rw [hC]
+    _ = z + ((1 - cis θ₁) * A + cis θ₁ * (1 - cis θ₂) * B +
+            cis θ₁ * cis θ₂ * (1 - cis θ₃) * C) := by ring
+
+/-- When three rotation angles sum to 2π, the composition is a translation.
+
+    Specifically: rotation A θ₁ ∘ rotation B θ₂ ∘ rotation C θ₃ = (· + v)
+    for some fixed v when θ₁ + θ₂ + θ₃ = 2π.
+
+    The translation vector v is what the LHS polynomial computes. -/
+theorem triple_rotation_is_translation (A B C : ℂ) (θ₁ θ₂ θ₃ : ℝ)
+    (hsum : θ₁ + θ₂ + θ₃ = 2 * Real.pi) :
+    ∃ v : ℂ, ∀ z : ℂ, rotation A θ₁ (rotation B θ₂ (rotation C θ₃ z)) = z + v := by
+  -- The composition is: A + cis(θ₁) * (rotation B θ₂ (rotation C θ₃ z) - A)
+  -- Expanding fully and using cis(θ₁)*cis(θ₂)*cis(θ₃) = cis(2π) = 1
+  use (1 - cis θ₁) * A + cis θ₁ * (1 - cis θ₂) * B + cis θ₁ * cis θ₂ * (1 - cis θ₃) * C
+  intro z
+  simp only [rotation]
+  have hprod : cis θ₁ * cis θ₂ * cis θ₃ = 1 := by
+    rw [← cis_add, ← cis_add, hsum, cis_two_pi]
+  have hC : cis θ₁ * cis θ₂ * cis θ₃ * C = C := by rw [hprod, one_mul]
+  -- Direct ring calculation
+  calc A + (B + (C + (z - C) * cis θ₃ - B) * cis θ₂ - A) * cis θ₁
+      = A + (B - A) * cis θ₁ + (C - B) * cis θ₁ * cis θ₂ +
+        (z - C) * (cis θ₁ * cis θ₂ * cis θ₃) := by ring
+    _ = A + (B - A) * cis θ₁ + (C - B) * cis θ₁ * cis θ₂ + (z - C) := by rw [hprod]; ring
+    _ = z + (A - C + (B - A) * cis θ₁ + (C - B) * cis θ₁ * cis θ₂) := by ring
+    _ = z + (A - cis θ₁ * A + cis θ₁ * B - cis θ₁ * cis θ₂ * B +
+            cis θ₁ * cis θ₂ * C - C) := by ring
+    _ = z + (A - cis θ₁ * A + cis θ₁ * B - cis θ₁ * cis θ₂ * B +
+            cis θ₁ * cis θ₂ * C - cis θ₁ * cis θ₂ * cis θ₃ * C) := by rw [hC]
+    _ = z + ((1 - cis θ₁) * A + cis θ₁ * (1 - cis θ₂) * B +
+            cis θ₁ * cis θ₂ * (1 - cis θ₃) * C) := by ring
+
+/-- A translation that fixes any point is the identity (translation by 0). -/
+theorem translation_fixing_point_is_zero {v : ℂ} {p : ℂ} (h : p + v = p) : v = 0 := by
+  have : v = p + v - p := by ring
+  rw [h] at this
+  simp at this
+  exact this
+
+/-- If the triple rotation fixes A, then LHS = 0.
+
+    Combined with triple_rotation_is_translation_by_lhs, this shows that
+    proving the composition fixes A is sufficient to prove LHS = 0. -/
+theorem triple_rotation_fixes_A_implies_lhs_zero (A B C : ℂ) (θ₁ θ₂ θ₃ : ℝ)
+    (hsum : θ₁ + θ₂ + θ₃ = 2 * Real.pi)
+    (hfix : rotation A θ₁ (rotation B θ₂ (rotation C θ₃ A)) = A) :
+    (1 - cis θ₁) * A + cis θ₁ * (1 - cis θ₂) * B + cis θ₁ * cis θ₂ * (1 - cis θ₃) * C = 0 := by
+  -- Use the direct translation formula
+  have hA := triple_rotation_is_translation_by_lhs A B C θ₁ θ₂ θ₃ hsum A
+  -- hA: rotation composition at A = A + LHS
+  -- But by hfix, rotation composition at A = A
+  rw [hfix] at hA
+  -- So A = A + LHS, meaning LHS = 0
+  exact translation_fixing_point_is_zero hA.symm
+
 /-- The simplified form of LHS using the factorization (x² + x + 1)(1-x) = 1 - x³ -/
 theorem lhs_simplified_form (A B C : ℂ) (a b c : ℂ) (habc : a * b * c = 1) :
     (1 - a) * A + a * (1 - b) * B + a * b * (1 - c) * C =
