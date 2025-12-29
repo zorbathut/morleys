@@ -754,4 +754,170 @@ theorem doubled_angles_eq_cubed_trisected (A B C : ℂ) (α β γ : ℝ)
   · rw [hβ]; ring
   · rw [hγ]; ring
 
+/-! ## The Core Geometric Identity
+
+The key fact is that for any triangle ABC with positive angles (counterclockwise orientation),
+the translation vector for the triple rotation with doubled angles is zero.
+
+This is a deep geometric identity relating vertex positions to their angles:
+  (1 - cis(2∠A))*A + cis(2∠A)*(1 - cis(2∠B))*B + cis(2∠A)*cis(2∠B)*(1 - cis(2∠C))*C = 0
+
+Proof approach: Use the relationship cis(2∠) = w/conj(w) where w is the ratio defining the angle.
+-/
+
+/-- cis(2*arg(w)) = w/conj(w) for nonzero w.
+
+    This is the key identity that relates cis(2*angle) to ratios of complex numbers. -/
+theorem cis_twice_arg (w : ℂ) (hw : w ≠ 0) : cis (2 * Complex.arg w) = w / starRingEnd ℂ w := by
+  -- w = |w| * cis(arg w), so w/conj(w) = cis(arg w) / cis(-arg w) = cis(2*arg w)
+  have hnorm : (‖w‖ : ℂ) ≠ 0 := by simp [hw]
+  have hnorm_sq : w * starRingEnd ℂ w = ↑(‖w‖^2) := by
+    rw [mul_comm, ← Complex.normSq_eq_conj_mul_self]
+    simp [Complex.normSq_eq_norm_sq]
+  have hconj_ne : starRingEnd ℂ w ≠ 0 := by simp [hw]
+  -- Key insight: cis(2*arg w) = w² / |w|² / w = w / conj(w)
+  -- We use: cis(2θ) = cis(θ)² and cis(arg w) = w / |w|
+  have hcis_arg : cis (Complex.arg w) = w / ↑‖w‖ := by
+    have h := Complex.norm_mul_exp_arg_mul_I w
+    simp only [cis]
+    field_simp [hnorm]
+    rw [mul_comm] at h
+    exact h
+  have hcis_sq : cis (2 * Complex.arg w) = (w / ↑‖w‖) ^ 2 := by
+    have h1 : cis (2 * Complex.arg w) = cis (Complex.arg w) * cis (Complex.arg w) := by
+      rw [← cis_add]; congr 1; ring
+    rw [h1, hcis_arg, sq]
+  rw [hcis_sq]
+  -- Now show (w / |w|)² = w / conj(w)
+  -- (w/|w|)² = w²/|w|² and w/conj(w) = w * w / (w * conj(w)) = w² / |w|²
+  have h1 : (w / ↑‖w‖) ^ 2 = w ^ 2 / ↑‖w‖ ^ 2 := by field_simp [hnorm]
+  have h2 : w / starRingEnd ℂ w = w ^ 2 / (w * starRingEnd ℂ w) := by
+    field_simp [hw, hconj_ne]
+  rw [h1, h2, hnorm_sq]
+  congr 1
+  push_cast
+  ring
+
+/-- For a nonzero complex number, cis(2*arg(w)) * conj(w) = w. -/
+theorem cis_twice_arg_mul_conj (w : ℂ) (hw : w ≠ 0) :
+    cis (2 * Complex.arg w) * starRingEnd ℂ w = w := by
+  rw [cis_twice_arg w hw]
+  have hconj_ne : starRingEnd ℂ w ≠ 0 := by simp [hw]
+  field_simp [hconj_ne]
+
+/-- The translation vector for triple rotation with doubled triangle angles.
+
+    For a triangle ABC with angles ∠A, ∠B, ∠C summing to π, we define:
+    - a = cis(2∠A), b = cis(2∠B), c = cis(2∠C)
+    - Translation v = (1-a)A + a(1-b)B + ab(1-c)C
+
+    The key identity is that this translation is zero for any triangle.
+
+    **Proof Strategy** (from algebraic manipulation):
+
+    Let u = (B-A)/(C-A), v = (C-B)/(A-B), w = (A-C)/(B-C).
+    Then:
+    - ∠A = arg(u), so a = cis(2∠A) = u/conj(u)
+    - ∠B = arg(v), so b = cis(2∠B) = v/conj(v)
+    - ∠C = arg(w), so c = cis(2∠C) = w/conj(w)
+    - u*v*w = -1 (product of ratios around triangle)
+
+    The identity v = 0 can then be verified by direct algebraic manipulation
+    using these substitutions. -/
+theorem translation_zero_for_doubled_angles (A B C : ℂ) (hnd : NonCollinear A B C)
+    (hpos : 0 < angle_at B A C ∧ 0 < angle_at C B A ∧ 0 < angle_at A C B) :
+    let a := cis (2 * angle_at B A C)
+    let b := cis (2 * angle_at C B A)
+    let c := cis (2 * angle_at A C B)
+    (1 - a) * A + a * (1 - b) * B + a * b * (1 - c) * C = 0 := by
+  simp only
+  -- Define the vertex difference ratios
+  set u := (B - A) / (C - A) with hu_def
+  set v := (C - B) / (A - B) with hv_def
+  set w := (A - C) / (B - C) with hw_def
+  -- The angles are arg of these ratios
+  have hCA : C - A ≠ 0 := sub_ne_zero.mpr hnd.ne_CA
+  have hAB : A - B ≠ 0 := sub_ne_zero.mpr hnd.ne_AB
+  have hBC : B - C ≠ 0 := sub_ne_zero.mpr hnd.ne_BC
+  have hBA : B - A ≠ 0 := sub_ne_zero.mpr hnd.ne_AB.symm
+  have hCB : C - B ≠ 0 := sub_ne_zero.mpr hnd.ne_BC.symm
+  have hAC : A - C ≠ 0 := sub_ne_zero.mpr hnd.ne_CA.symm
+  have hu_ne : u ≠ 0 := div_ne_zero hBA hCA
+  have hv_ne : v ≠ 0 := div_ne_zero hCB hAB
+  have hw_ne : w ≠ 0 := div_ne_zero hAC hBC
+  -- Product u*v*w = -1
+  have hprod : u * v * w = -1 := by
+    simp only [hu_def, hv_def, hw_def]
+    field_simp [hCA, hAB, hBC]
+    ring
+  -- Relate cis(2*angle) to ratios
+  have ha : cis (2 * angle_at B A C) = u / starRingEnd ℂ u := cis_twice_arg u hu_ne
+  have hb : cis (2 * angle_at C B A) = v / starRingEnd ℂ v := cis_twice_arg v hv_ne
+  have hc : cis (2 * angle_at A C B) = w / starRingEnd ℂ w := cis_twice_arg w hw_ne
+  -- Now substitute and verify algebraically
+  rw [ha, hb, hc]
+  -- The proof requires showing that after substitution, everything cancels
+  -- This is a lengthy algebraic verification
+  have hu_conj : starRingEnd ℂ u ≠ 0 := by simp [hu_ne]
+  have hv_conj : starRingEnd ℂ v ≠ 0 := by simp [hv_ne]
+  have hw_conj : starRingEnd ℂ w ≠ 0 := by simp [hw_ne]
+  -- Express vertex differences in terms of the ratios
+  have hBA_eq : B - A = u * (C - A) := by
+    simp only [hu_def]
+    field_simp [hCA]
+  have hCB_eq : C - B = v * (A - B) := by
+    simp only [hv_def]
+    field_simp [hAB]
+  have hAC_eq : A - C = w * (B - C) := by
+    simp only [hw_def]
+    field_simp [hBC]
+  -- The algebraic identity is complex; use polyrith or native_decide if available
+  -- For now, we'll use a direct field_simp approach
+  field_simp [hu_conj, hv_conj, hw_conj]
+  -- After clearing denominators, this becomes a polynomial identity
+  -- The identity holds because of the constraint u*v*w = -1 and the triangle geometry
+  -- Full proof requires expanding and using the product constraint
+  sorry
+
+/-- The Morley LHS vanishes for any triangle with positive angles.
+
+    This is the key theorem that will replace the axiom in Morley.lean. -/
+theorem morley_lhs_zero (A B C : ℂ) (hnd : NonCollinear A B C)
+    (hpos : 0 < angle_at B A C ∧ 0 < angle_at C B A ∧ 0 < angle_at A C B) :
+    let α := angle_at B A C / 3
+    let β := angle_at C B A / 3
+    let γ := angle_at A C B / 3
+    let a₁ := cis (2 * α)
+    let a₂ := cis (2 * β)
+    let a₃ := cis (2 * γ)
+    (a₁ ^ 2 + a₁ + 1) * (A * (1 - a₁)) +
+    a₁ ^ 3 * (a₂ ^ 2 + a₂ + 1) * (B * (1 - a₂)) +
+    a₁ ^ 3 * a₂ ^ 3 * (a₃ ^ 2 + a₃ + 1) * (C * (1 - a₃)) = 0 := by
+  simp only
+  -- Get the trisected angles sum
+  have hsum := trisected_angles_sum hnd hpos
+  -- Apply our key reduction
+  have hfix : rotation A (6 * (angle_at B A C / 3))
+      (rotation B (6 * (angle_at C B A / 3))
+        (rotation C (6 * (angle_at A C B / 3)) A)) = A := by
+    -- The angles simplify: 6 * (∠/3) = 2∠
+    have h1 : 6 * (angle_at B A C / 3) = 2 * angle_at B A C := by ring
+    have h2 : 6 * (angle_at C B A / 3) = 2 * angle_at C B A := by ring
+    have h3 : 6 * (angle_at A C B / 3) = 2 * angle_at A C B := by ring
+    simp only [h1, h2, h3]
+    -- Now we need: rotation A (2∠A) (rotation B (2∠B) (rotation C (2∠C) A)) = A
+    -- Since rotation A θ A = A, this reduces to:
+    -- rotation B (2∠B) (rotation C (2∠C) A) = A
+    -- Which follows from translation_zero_for_doubled_angles
+    have hsum6 : 2 * angle_at B A C + 2 * angle_at C B A + 2 * angle_at A C B = 2 * Real.pi := by
+      have hpi := angle_sum_pi hnd
+      simp only [abs_of_pos hpos.1, abs_of_pos hpos.2.1, abs_of_pos hpos.2.2] at hpi
+      linarith
+    have htrans := triple_rotation_is_translation_by_lhs A B C
+      (2 * angle_at B A C) (2 * angle_at C B A) (2 * angle_at A C B) hsum6 A
+    have hzero := translation_zero_for_doubled_angles A B C hnd hpos
+    simp only at htrans hzero
+    rw [htrans, hzero, add_zero]
+  exact morley_lhs_zero_if_rotation_fixes_A A B C _ _ _ hsum hfix
+
 end Morley
