@@ -583,6 +583,28 @@ theorem triple_rotation_fixes_A_implies_lhs_zero (A B C : ℂ) (θ₁ θ₂ θ�
   -- So A = A + LHS, meaning LHS = 0
   exact translation_fixing_point_is_zero hA.symm
 
+/-- The OPPOSITE order composition: first at A, then B, then C.
+
+    When θ₁ + θ₂ + θ₃ = 2π, this composition equals z + v where:
+    v = (cis θ₂ * cis θ₃ - 1) * A + cis θ₃ * (1 - cis θ₂) * B + (1 - cis θ₃) * C
+
+    This is the order used in the Isabelle AFP proof (g22).
+    For the Morley configuration (where θ₁ = 2*angle_at B A C, etc.), v = 0. -/
+theorem triple_rotation_ABC_translation (A B C : ℂ) (θ₁ θ₂ θ₃ : ℝ)
+    (hsum : θ₁ + θ₂ + θ₃ = 2 * Real.pi) :
+    ∀ z : ℂ, rotation C θ₃ (rotation B θ₂ (rotation A θ₁ z)) = z +
+      ((cis θ₂ * cis θ₃ - 1) * A + cis θ₃ * (1 - cis θ₂) * B + (1 - cis θ₃) * C) := by
+  intro z
+  simp only [rotation]
+  have hprod : cis θ₁ * cis θ₂ * cis θ₃ = 1 := by
+    rw [← cis_add, ← cis_add, hsum, cis_two_pi]
+  calc C + (B + (A + (z - A) * cis θ₁ - B) * cis θ₂ - C) * cis θ₃
+      = C + (B - C) * cis θ₃ + (A - B) * cis θ₂ * cis θ₃ +
+        (z - A) * (cis θ₁ * cis θ₂ * cis θ₃) := by ring
+    _ = C + (B - C) * cis θ₃ + (A - B) * cis θ₂ * cis θ₃ + (z - A) := by rw [hprod]; ring
+    _ = z + (C - A + (B - C) * cis θ₃ + (A - B) * cis θ₂ * cis θ₃) := by ring
+    _ = z + ((cis θ₂ * cis θ₃ - 1) * A + cis θ₃ * (1 - cis θ₂) * B + (1 - cis θ₃) * C) := by ring
+
 /-- The simplified form of LHS using the factorization (x² + x + 1)(1-x) = 1 - x³ -/
 theorem lhs_simplified_form (A B C : ℂ) (a b c : ℂ) (habc : a * b * c = 1) :
     (1 - a) * A + a * (1 - b) * B + a * b * (1 - c) * C =
