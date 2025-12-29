@@ -18,30 +18,22 @@ form an equilateral triangle.
 
 * `morleyVertex` : Morley vertex (fixed point of two rotations)
 * `pairwise_cis_ne_one` : Denominators in Morley point formulas are nonzero
-* `triple_rotation_lhs_zero` : Key geometric axiom - the LHS polynomial vanishes
+* `triple_rotation_lhs_zero` : The LHS polynomial vanishes for the Morley configuration
 * `morley_theorem` : The main theorem
 
 ## Strategy
 
 1. From Triangle.lean: `trisected_angles_sum` gives α + β + γ = π/3
 2. Prove pairwise cis products ≠ 1 (denominators nonzero)
-3. Use `triple_rotation_lhs_zero` axiom to get LHS = 0
+3. Use `triple_rotation_lhs_zero` to get LHS = 0
 4. Apply `morley_triangle_equilateral` from Connes.lean to conclude
 
-## Key Insight (from Isabelle AFP proof)
+## Key Insight
 
 The critical step is proving that the LHS polynomial vanishes for the Morley
-configuration. The Isabelle AFP proof (Morley.thy, lemmas g20-g22) establishes
-this using axial symmetry:
-1. The composition of three cubed rotations (by 6α at A, 6β at B, 6γ at C) is
-   a translation (since the total angle 6α + 6β + 6γ = 2π).
-2. This translation fixes vertex A (proven via axial symmetry properties of
-   angle trisection).
-3. Therefore the translation is zero, making the composition the identity.
-4. By `lhs_zero_when_identity`, this implies LHS = 0.
-
-We accept `triple_rotation_lhs_zero` as an axiom, as the full axial symmetry
-proof requires substantial geometric machinery beyond this algebraic approach.
+configuration. The proof uses `translation_ABC_zero_for_doubled_angles` from
+AxialSymmetry.lean, which establishes that for any triangle with positive angles,
+the translation vector from the triple rotation composition is zero.
 -/
 
 namespace Morley
@@ -315,7 +307,7 @@ theorem morley_theorem (A B C : ℂ) (hnd : NonCollinear A B C)
   have h₁₂ : cis (2 * γ) * cis (2 * β) ≠ 1 := by rw [mul_comm]; exact hpair.2.1
   have h₂₃ : cis (2 * β) * cis (2 * α) ≠ 1 := by rw [mul_comm]; exact hpair.1
   have h₁₃ : cis (2 * γ) * cis (2 * α) ≠ 1 := by rw [mul_comm]; exact hpair.2.2
-  -- Get LHS = 0 from the axiom (key geometric fact from Isabelle AFP)
+  -- Get LHS = 0 from triple_rotation_lhs_zero
   have hLHS := triple_rotation_lhs_zero A B C hnd hpos
   -- Apply morley_triangle_equilateral to conclude
   exact morley_triangle_equilateral A B C α β γ hsum

@@ -147,10 +147,8 @@ theorem root_unity_carac (a₁ a₂ a₃ b₁ b₂ b₃ : ℂ)
       _ = a₂ - a₁ * a₂ * a₃ := by ring
       _ = a₂ - ω := by rw [hprod]
   -- Clear denominators and verify the polynomial identity
-  -- This is a massive computation verified in Isabelle (see Third_Unity_Root.thy)
   field_simp [h₁₂, h₂₃, h₁₃, h13']
-  -- The polynomial identity is proven using Lean 4.21's grind tactic with Gröbner basis
-  -- The identity holds using ω³ = 1 and 1 + ω + ω² = 0 (from hωsum, hω3 in context)
+  -- The polynomial identity is proven using grind with Gröbner basis
   grind
 
 /-- When the LHS of root_unity_carac is zero, R + ω*P + ω²*Q = 0.

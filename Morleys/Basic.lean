@@ -24,7 +24,4 @@ on ℂ and characterizes equilateral triangles by the condition `α + ωβ + ω�
 
 namespace Morley
 
--- Placeholder for main development
--- See CubeRoot.lean, Trig.lean, Rotation.lean, etc.
-
 end Morley

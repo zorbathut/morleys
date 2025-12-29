@@ -447,12 +447,9 @@ theorem img_r_sym {z1 z2 z : ℂ} (h12 : z1 ≠ z2) (hz_line : z ∉ line z1 z2)
 /-! ## Infrastructure for Triple Rotation Proof
 
 The key geometric fact for Morley's theorem is that the LHS polynomial vanishes.
-The full proof (following Isabelle AFP) requires showing that the composition of
-three cubed rotations fixes vertex A, which then implies LHS = 0.
-
-The machinery developed here (img_r_sym, angle negation, etc.) provides the
-foundation for this proof. The complete proof requires tracking how angle
-trisector lines interact with axial symmetry.
+The machinery developed here (img_r_sym, angle negation, etc.) enables the proof
+that the translation vector from triple rotation is zero for any triangle with
+positive angles, which is the key step in proving LHS = 0.
 -/
 
 /-- Applying rotation by 2*angle reverses the effect of axial symmetry.
@@ -666,17 +663,17 @@ theorem lhs_rewrite (A B C : ℂ) (a₁ a₂ a₃ : ℂ) :
 
 /-! ## Connection to Morley LHS
 
-The axiom in Morley.lean claims that for the Morley configuration, the LHS vanishes.
-Here we establish the key connection: the axiom's LHS equals the translation from
+The key theorem `triple_rotation_lhs_zero` in Morley.lean proves that the LHS vanishes.
+Here we establish the connection: the LHS equals the translation from
 triple_rotation_is_translation_by_lhs with angles 6α, 6β, 6γ (the cubed rotation angles).
 
 This means: LHS = 0 ⟺ triple rotation fixes A.
 -/
 
-/-- The Morley LHS (from the axiom) equals the translation from the (C,B,A) order
+/-- The Morley LHS equals the translation from the (C,B,A) order
     triple rotation with cubed angles.
 
-    The axiom's LHS is:
+    The LHS is:
     (a₁² + a₁ + 1)(A(1-a₁)) + a₁³(a₂² + a₂ + 1)(B(1-a₂)) + a₁³a₂³(a₃² + a₃ + 1)(C(1-a₃))
 
     which by lhs_rewrite equals:
@@ -1008,9 +1005,8 @@ There are TWO different translation formulas depending on composition order:
    First rotate at C, then B, then A. Translation = (1-a)*A + a*(1-b)*B + a*b*(1-c)*C.
    This is NOT zero in general!
 
-The axiom `triple_rotation_lhs_zero` in Morley.lean uses the (C,B,A) order formula,
-which requires additional geometric reasoning (axial symmetry) to prove vanishes
-for the specific Morley configuration.
+The theorem `triple_rotation_lhs_zero` in Morley.lean uses the swapped variable
+assignment (C,γ) ↔ (A,α) to connect to the (A,B,C) order formula, which IS zero.
 -/
 
 end Morley
